@@ -101,7 +101,7 @@ class DrawScreen:
         for player in players:
             # Settlements
             for vertex in player.settlements:
-                self.draw(config.vertex_position[vertex][0], config.vertex_position[vertex][1] - config.settlement_size[1], config.players[player.player_id]['img_settlement'], config.settlement_size)
+                self.draw(config.vertex_position[vertex][0], config.vertex_position[vertex][1], config.players[player.player_id]['img_settlement'], config.settlement_size)
 
     def draw_board(self, robber_tile, players, player_turn, log):
         self.draw_tiles(self.tiles)

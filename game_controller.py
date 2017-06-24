@@ -71,7 +71,7 @@ class GameController:
     def check_click(self, pos):
         if self.current_action == -1:
             for i, action in enumerate(config.screen_objects):
-                if self.pos_in_rectangle(pos, config.card_positions[i][0] - config.card_size[0], config.card_positions[i][1], config.card_size[0], config.card_size[1]):
+                if self.pos_in_rectangle(pos, config.card_positions[i][0], config.card_positions[i][1], config.card_size[0], config.card_size[1]):
                     return action
 
     def handle_mouse_button_down(self, pos, button):
@@ -89,7 +89,7 @@ class GameController:
         if self.current_action == 0:
             for _, vertices in config.tiles_vertex.items():
                 for _, vertex in enumerate(vertices):
-                    if self.pos_in_rectangle(pos, config.vertex_position[vertex][0] - config.vertex_size[0], config.vertex_position[vertex][1] - config.vertex_size[1], config.vertex_size[0], config.vertex_size[1]):
+                    if self.pos_in_rectangle(pos, config.vertex_position[vertex][0], config.vertex_position[vertex][1], config.vertex_size[0], config.vertex_size[1]):
                         return vertex
             return -1
 

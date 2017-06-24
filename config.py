@@ -18,10 +18,10 @@ BUILD_ROAD = 2
 # Board dimensions
 x_dist = 120
 y_dist = 105
-x_offset = 60
+x_offset = x_dist / 2
 total_x_offset = 5
 total_y_offset = 5
-number_x_offset = -25
+number_x_offset = 25
 number_y_offset = 30
 
 tiles_size = (112, 124)
@@ -46,12 +46,12 @@ thickness = 3
 line_space = 20
 
 # Current player screen
-player_screen_x = 20
+player_screen_x = 5
 player_screen_y = 775
 player_screen_height = 100
 player_screen_width = player_stats_x + player_stats_width - player_screen_x
 
-card_1_x = 70 + player_screen_x
+card_1_x = 15 + player_screen_x
 card_1_y = 15 + player_screen_y
 card_size = (40, 40)
 card_space_x = 90
@@ -104,7 +104,7 @@ for i in range(7):
 
 # Vertex position upper left corner = tile_position + tile_vertex_offset - vertex_size
 vertex_size = (40, 40)
-tile_vertex_offset = [(-100, 44), (-39, 20), (22, 44), (22, 120), (-39, 144), (-100, 120)]
+tile_vertex_offset = [(-20, 10), (42, -20), (104, 10), (104, 74), (42, 104), (-20, 74)]
 
 # Store positions for all vertices
 vertex_position = [(0, 0) for i in range(54)]
@@ -112,15 +112,15 @@ for tile, vertices in tiles_vertex.items():
     for i, vertex in enumerate(vertices):
         vertex_position[vertex] = (tile_position[tile][0] + tile_vertex_offset[i][0], tile_position[tile][1] + tile_vertex_offset[i][1])
 
-ports_vertex = {0: {'vert': [16, 27], 'tile': 16, 'offset': (-100, 15)},
-                1: {'vert': [7, 8], 'tile': 10, 'offset': (-55, -65)},
-                2: {'vert': [2, 3], 'tile': 6, 'offset': (-55, -65)},
-                3: {'vert': [5, 6], 'tile': 7, 'offset': (35, -63)},
-                4: {'vert': [15, 25], 'tile': 13, 'offset': (80, 15)},
-                5: {'vert': [36, 46], 'tile': 26, 'offset': (80, 15)},
-                6: {'vert': [52, 53], 'tile': 31, 'offset': (35, 98)},
-                7: {'vert': [49, 50], 'tile': 30, 'offset': (-55, 100)},
-                8: {'vert': [38, 39], 'tile': 23, 'offset': (-55, 100)}}
+ports_vertex = {0: {'vert': [16, 27], 'tile': 16, 'offset': (-80, 15)},
+                1: {'vert': [7, 8], 'tile': 10, 'offset': (-35, -65)},
+                2: {'vert': [2, 3], 'tile': 6, 'offset': (-35, -65)},
+                3: {'vert': [5, 6], 'tile': 7, 'offset': (55, -63)},
+                4: {'vert': [15, 25], 'tile': 13, 'offset': (100, 15)},
+                5: {'vert': [36, 46], 'tile': 26, 'offset': (100, 15)},
+                6: {'vert': [52, 53], 'tile': 31, 'offset': (55, 98)},
+                7: {'vert': [49, 50], 'tile': 30, 'offset': (-35, 100)},
+                8: {'vert': [38, 39], 'tile': 23, 'offset': (-35, 100)}}
 
 tile_types = {WATER: {'img': 'img/water.png'},
               DESERT: {'img': 'img/desert.png', 'number': 1},
