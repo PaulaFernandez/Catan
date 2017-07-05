@@ -14,6 +14,9 @@ GENERIC = 7
 BUILD_SETTLEMENT = 0
 BUILD_CITY = 1
 BUILD_ROAD = 2
+THROW_DICE = 3
+SAVE_GAME = 100
+LOAD_GAME = 101
 
 # Board dimensions
 x_dist = 120
@@ -105,7 +108,7 @@ for i in range(7):
 
 # Vertex position upper left corner = tile_position + tile_vertex_offset - vertex_size
 vertex_size = (40, 40)
-tile_vertex_offset = [(-20, 10), (42, -20), (104, 10), (104, 74), (42, 104), (-20, 74)]
+tile_vertex_offset = [(-20, 10), (42, -20), (104, 10), (104, 84), (42, 114), (-20, 84)]
 
 # Store positions for all vertices
 vertex_position = [(0, 0) for i in range(54)]
@@ -148,6 +151,19 @@ port_types = {SHEEP:{'img': 'img/sheep_port.png', 'number': 1},
              }
 
 robber = {'img': 'img/robber.png'}
+
+throw_dice = {'img': 'img/dices.png'}
+throw_dice_position = (1000, 675)
+throw_dice_size = (80, 51)
+big_dice_size = (200, 200)
+
+save_game = {'img': 'img/save.png'}
+save_game_position = (1000, 15)
+save_game_size = (64, 64)
+
+load_game = {'img': 'img/load.png'}
+load_game_position = (925, 15)
+load_game_size = (64, 64)
 
 roll_numbers = [2, 3, 3, 4, 4, 5, 5, 6, 6, 8, 8, 9, 9, 10, 10, 11, 11, 12]
 water_tiles = [0, 1, 2, 3, 4, 8, 9, 14, 15, 21, 22, 27, 28, 32, 33, 34, 35, 36]

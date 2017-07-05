@@ -1,13 +1,9 @@
+import math
 import config
 import pygame
-import math
 
 class DrawScreen:
-    def __init__(self, tiles, numbers, ports, screen):
-        self.tiles = tiles
-        self.numbers = numbers
-        self.ports = ports
-
+    def __init__(self, screen):
         self.screen = screen
         self.font = pygame.font.SysFont("sans-serif", 25)
 
@@ -25,11 +21,8 @@ class DrawScreen:
             self.draw(config.tile_position[i][0], config.tile_position[i][1], config.tile_types[tiles[i]]['img'], config.tiles_size)
 
     def draw_numbers(self, tiles, numbers):
-        j = 0
-        for i in range(len(tiles)):
-            if tiles[i] != config.WATER and tiles[i] != config.DESERT:
-                self.draw(config.tile_position[i][0] + config.number_x_offset, config.tile_position[i][1] + config.number_y_offset, 'img/number_' + str(numbers[j]) + '.png', config.numbers_size)
-                j += 1
+        for number, tile in numbers:
+            self.draw(config.tile_position[tile][0] + config.number_x_offset, config.tile_position[tile][1] + config.number_y_offset, 'img/number_' + str(number) + '.png', config.numbers_size)
 
     def draw_ports(self, ports):
         for i, port in enumerate(ports):
@@ -77,6 +70,13 @@ class DrawScreen:
         label_msg = self.font.render(log, 1, config.main_color)
         self.screen.blit(label_msg, (x + config.player_stats_x_offset, y + config.player_stats_y_offset))
 
+        # Draw throw dice button
+        self.draw(config.throw_dice_position[0], config.throw_dice_position[1], config.throw_dice['img'], config.throw_dice_size)
+
+        # Draw save and load
+        self.draw(config.save_game_position[0], config.save_game_position[1], config.save_game['img'], config.save_game_size)
+        self.draw(config.load_game_position[0], config.load_game_position[1], config.load_game['img'], config.load_game_size)
+
     def draw_current_player(self, player):
         def draw_card(i, img, label):
             self.draw(config.card_positions[i][0], config.card_positions[i][1], img, config.card_size)
@@ -120,12 +120,27 @@ class DrawScreen:
 
                 self.draw((vertex_2_x + vertex_1_x) / 2, (vertex_2_y + vertex_1_y) / 2, config.players[player.player_id]['img_road'], config.road_size, angle=angle)
 
-    def draw_board(self, robber_tile, players, player_turn, log):
-        self.draw_tiles(self.tiles)
-        self.draw_numbers(self.tiles, self.numbers)
-        self.draw_ports(self.ports)
+    def draw_position_squares(self):
+        for _, vertices in config.tiles_vertex.items():
+            for i in range(len(vertices)):
+                x = (config.vertex_position[vertices[i]][0] + config.vertex_position[vertices[i-1]][0]) / 2
+                y = (config.vertex_position[vertices[i]][1] + config.vertex_position[vertices[i-1]][1]) / 2
+                pygame.draw.rect(self.screen, config.players[0]['color'], (x, y, config.road_size[0], config.road_size[1]), config.thickness)
+
+    def draw_big_dices(self, dices):
+        self.draw(300, 500, 'img/dice' + str(dices[0]) + '.png', config.big_dice_size)
+        self.draw(600, 500, 'img/dice' + str(dices[1]) + '.png', config.big_dice_size)
+
+    def draw_board(self, tiles, numbers, ports, robber_tile, players, player_turn, log, dices):
+        self.draw_tiles(tiles)
+        self.draw_numbers(tiles, numbers)
+        self.draw_ports(ports)
         self.draw_robber(robber_tile)
         self.draw_improvements(players)
         self.draw_summary(players, player_turn, log)
         self.draw_current_player(players[player_turn])
+        #self.draw_position_squares()
+
+        if dices != (0, 0):
+            self.draw_big_dices(dices)
         
