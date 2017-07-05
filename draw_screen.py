@@ -1,5 +1,6 @@
 import config
 import pygame
+import math
 
 class DrawScreen:
     def __init__(self, tiles, numbers, ports, screen):
@@ -10,9 +11,13 @@ class DrawScreen:
         self.screen = screen
         self.font = pygame.font.SysFont("sans-serif", 25)
 
-    def draw(self, x, y, image_path, scale):
+    def draw(self, x, y, image_path, scale, angle=0):
         image = pygame.image.load(image_path)
         image = pygame.transform.scale(image, scale)
+
+        if angle != 0:
+            image = pygame.transform.rotate(image, angle)
+
         self.screen.blit(image, (x, y))
 
     def draw_tiles(self, tiles):
@@ -102,6 +107,18 @@ class DrawScreen:
             # Settlements
             for vertex in player.settlements:
                 self.draw(config.vertex_position[vertex][0], config.vertex_position[vertex][1], config.players[player.player_id]['img_settlement'], config.settlement_size)
+            for road in player.roads:
+                vertex_1_x = config.vertex_position[road[0]][0]
+                vertex_1_y = config.vertex_position[road[0]][1]
+                vertex_2_x = config.vertex_position[road[1]][0]
+                vertex_2_y = config.vertex_position[road[1]][1]
+
+                if int(vertex_1_x) == int(vertex_2_x):
+                    angle = 90
+                else:
+                    angle = math.degrees(math.atan((vertex_1_y - vertex_2_y) / (vertex_2_x - vertex_1_x)))
+
+                self.draw((vertex_2_x + vertex_1_x) / 2, (vertex_2_y + vertex_1_y) / 2, config.players[player.player_id]['img_road'], config.road_size, angle=angle)
 
     def draw_board(self, robber_tile, players, player_turn, log):
         self.draw_tiles(self.tiles)

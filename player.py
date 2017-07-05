@@ -12,6 +12,8 @@ class Player():
         self.cities = []
         self.roads = []
 
+        self.valid_roads = []
+
     def total_cards(self):
         total = 0
 

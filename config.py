@@ -29,6 +29,7 @@ numbers_size = (60, 60)
 ports_size = (90, 90)
 
 settlement_size = (30, 30)
+road_size = (30, 30)
 
 # Player stats offsets
 player_stats_x = 1100
