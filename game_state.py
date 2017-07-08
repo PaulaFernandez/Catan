@@ -138,18 +138,19 @@ class GameState:
         self.dice_resources(result)
 
         if result == 7:
-            '''self.game_phase = (1, 2)
-            self.log = "Discard"
+            self.game_phase = (1, 2)
 
             for player_x in self.players:
-                if len(player_x.cards) > 7:
-                    self.players_to_discard.append((player_x.player_id, int(len(player_x.cards) / 2)))
+                if player_x.total_cards() > 7:
+                    self.players_to_discard.append((player_x.player_id, int(player_x.total_cards() / 2)))
 
             if len(self.players_to_discard) == 0:
                 self.game_phase = (1, 3)
-                self.log = "Move the robber"'''
+                self.log = "Move the robber"
+            else:
+                self.log = "Player " + str(self.players_to_discard[0][0] + 1) + ": Discard " + str(self.players_to_discard[0][1]) + " cards"
 
-            self.game_phase = (1, 1)
+            #self.game_phase = (1, 1)
         else:
             self.game_phase = (1, 1)
             self.log = "Choose your action"
@@ -250,3 +251,20 @@ class GameState:
                 self.players[self.player_turn].remove_resources('road')
 
         self.current_action = -1
+
+    def handle_discard(self, card):
+        player_discarding_id = self.players_to_discard[0][0]
+
+        if self.players[player_discarding_id].cards[card] > 0:
+            self.players[player_discarding_id].cards[card] -= 1
+
+            if self.players_to_discard[0][1] <= 1:
+                self.players_to_discard.pop(0)
+            else:
+                self.players_to_discard[0] = (player_discarding_id, self.players_to_discard[0][1] - 1)
+
+        if len(self.players_to_discard) > 0:
+            self.log = "Player " + str(self.players_to_discard[0][0] + 1) + ": discard " + str(self.players_to_discard[0][1]) + " cards"
+        else:
+            self.game_phase = (1, 3)
+            self.log = "Player " + str(self.player_turn + 1) + ": move robber"

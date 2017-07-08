@@ -17,6 +17,12 @@ class GameController:
 
     def redraw(self):
         self.screen.fill((0, 0, 0))
+
+        if len(self.game.players_to_discard) > 0:
+            player_to_discard = self.game.players_to_discard[0][0]
+        else:
+            player_to_discard = None
+
         self.draw_tool.draw_board(self.game.tiles,
                                   self.game.numbers,
                                   self.game.ports,
@@ -24,7 +30,8 @@ class GameController:
                                   self.game.players,
                                   self.game.player_turn,
                                   self.game.log,
-                                  self.game.dices)
+                                  self.game.dices,
+                                  player_to_discard)
 
     def check_click(self, pos):
         if self.game.current_action == -1:
@@ -43,6 +50,8 @@ class GameController:
 
             if self.pos_in_rectangle(pos, config.continue_game_position[0], config.continue_game_position[1], config.continue_game_size[0], config.continue_game_size[1]):
                 return ('action', config.CONTINUE_GAME)
+
+        return ('', -1)
 
     def handle_mouse_button_down(self, pos, button):
         if self.game.current_action == config.THROW_DICE:
@@ -71,6 +80,10 @@ class GameController:
                 self.game.current_action = config.BUILD_CITY
             elif self.check_click(pos) == ('action', config.BUILD_SETTLEMENT):
                 self.game.current_action = config.BUILD_SETTLEMENT
+        elif self.game.game_phase == (1, 2):
+            click = self.check_click(pos)
+            if click[0] == 'card':
+                self.game.handle_discard(click[1])
 
         if self.check_click(pos) == ('action', config.SAVE_GAME):
             with open('game.pkl', 'wb') as output:
