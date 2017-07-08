@@ -69,6 +69,8 @@ class GameController:
                 self.game.current_action = config.BUILD_ROAD
             elif self.check_click(pos) == ('action', config.BUILD_CITY):
                 self.game.current_action = config.BUILD_CITY
+            elif self.check_click(pos) == ('action', config.BUILD_SETTLEMENT):
+                self.game.current_action = config.BUILD_SETTLEMENT
 
         if self.check_click(pos) == ('action', config.SAVE_GAME):
             with open('game.pkl', 'wb') as output:

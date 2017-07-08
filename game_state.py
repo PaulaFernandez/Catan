@@ -173,6 +173,13 @@ class GameState:
 
             return False
 
+        def road_reaches_vertex(vertex, player_roads):
+            for road in player_roads:
+                if road[0] == vertex or road[1] == vertex:
+                    return True
+
+            return False
+
         if vertex < 0:
             return False
 
@@ -180,6 +187,10 @@ class GameState:
             for settlement in player_x.settlements + player_x.cities:
                 if settlement_clash(vertex, settlement):
                     return False
+
+        if self.game_phase == (1, 1):
+            if road_reaches_vertex(vertex, self.players[self.player_turn].roads) is False:
+                return False
 
         return True
 
@@ -201,13 +212,17 @@ class GameState:
 
     def handle_build_settlement(self, vertex_released):
         if self.valid_settlement(vertex_released):
-            self.players[self.player_turn].settlements.append(vertex_released)
 
             if self.game_phase == (0, 0):
                 self.game_phase = (0, 1)
+                self.players[self.player_turn].settlements.append(vertex_released)
                 self.initial_phase_settlement = vertex_released
                 self.initial_settlement_resources(vertex_released)
                 self.log = "Player " + str(self.player_turn + 1) + ": place road"
+
+            elif self.game_phase == (1, 1) and self.players[self.player_turn].available_resources('settlement'):
+                self.players[self.player_turn].remove_resources('settlement')
+                self.players[self.player_turn].settlements.append(vertex_released)
 
         self.current_action = -1
 

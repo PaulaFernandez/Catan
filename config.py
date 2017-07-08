@@ -12,11 +12,13 @@ WHEAT = 5
 WOOD = 6
 GENERIC = 7
 
+# Needed resources for actions
 resources = {'road': {BRICK: 1, WOOD: 1},
              'settlement': {BRICK: 1, WOOD: 1, SHEEP: 1, WHEAT: 1},
              'city': {ORE: 3, WHEAT: 2},
              'special_card': {ORE: 1, WHEAT: 1, SHEEP: 1}}
 
+# Max number of elements
 max_settlements = 5
 max_cities = 4
 max_roads = 15
@@ -39,12 +41,12 @@ total_y_offset = 5
 number_x_offset = 25
 number_y_offset = 30
 
+# Sizes
 tiles_size = (112, 124)
 numbers_size = (60, 60)
 ports_size = (90, 90)
-
 settlement_size = (30, 30)
-city_size = (30, 40)
+city_size = (40, 30)
 road_size = (30, 30)
 
 # Player stats offsets
@@ -84,10 +86,12 @@ screen_objects = [('card', SHEEP),
                   ('action', BUILD_CITY),
                   ('action', BUILD_ROAD)
                  ]
+
 card_positions = []
 for i in range(15):
     card_positions.append((card_1_x + card_space_x * i, card_1_y))
 
+# Vertex belonging to tiles
 tiles_vertex = {5: [0, 1, 2, 10, 9, 8],
                 6: [2, 3, 4, 12, 11, 10],
                 7: [4, 5, 6, 14, 13, 12],
@@ -108,6 +112,7 @@ tiles_vertex = {5: [0, 1, 2, 10, 9, 8],
                 30: [41, 42, 43, 51, 50, 49],
                 31: [43, 44, 45, 53, 52, 51]}
 
+# Position of the tiles
 done = 0
 tile_position = []
 
@@ -165,10 +170,22 @@ port_types = {SHEEP:{'img': 'img/sheep_port.png', 'number': 1},
 
 robber = {'img': 'img/robber.png'}
 
+roll_numbers = [2, 3, 3, 4, 4, 5, 5, 6, 6, 8, 8, 9, 9, 10, 10, 11, 11, 12]
+water_tiles = [0, 1, 2, 3, 4, 8, 9, 14, 15, 21, 22, 27, 28, 32, 33, 34, 35, 36]
+
+players = {0: {'name': 'Player 1', 'color': (255, 0, 0), 'img_settlement': 'img/settlement_red.png', 'img_city': 'img/city_red.png', 'img_road': 'img/road_red.png'},
+           1: {'name': 'Player 2', 'color': (80, 80, 255), 'img_settlement': 'img/settlement_blue.png', 'img_city': 'img/city_blue.png', 'img_road': 'img/road_blue.png'},
+           2: {'name': 'Player 3', 'color': (0, 255, 0), 'img_settlement': 'img/settlement_green.png', 'img_city': 'img/city_green.png', 'img_road': 'img/road_green.png'},
+           3: {'name': 'Player 4', 'color': (255, 153, 0), 'img_settlement': 'img/settlement_orange.png', 'img_city': 'img/city_orange.png', 'img_road': 'img/road_orange.png'}
+          }
+
 throw_dice = {'img': 'img/dices.png'}
 throw_dice_position = (1000, 675)
 throw_dice_size = (80, 51)
-big_dice_size = (200, 200)
+big_dice_x1 = 350
+big_dice_x2 = 650
+big_dice_y = 400
+big_dice_size = (299, 294)
 
 save_game = {'img': 'img/save.png'}
 save_game_position = (1000, 15)
@@ -182,13 +199,3 @@ continue_game = {'img': 'img/next.png'}
 continue_game_position = (1000, 575)
 continue_game_size = (64, 64)
 
-roll_numbers = [2, 3, 3, 4, 4, 5, 5, 6, 6, 8, 8, 9, 9, 10, 10, 11, 11, 12]
-water_tiles = [0, 1, 2, 3, 4, 8, 9, 14, 15, 21, 22, 27, 28, 32, 33, 34, 35, 36]
-
-players = {0: {'name': 'Player 1', 'color': (255, 0, 0), 'img_settlement': 'img/settlement_red.png', 'img_city': 'img/city_red.png', 'img_road': 'img/road_red.png'},
-           1: {'name': 'Player 2', 'color': (80, 80, 255), 'img_settlement': 'img/settlement_blue.png', 'img_city': 'img/city_blue.png', 'img_road': 'img/road_blue.png'},
-           2: {'name': 'Player 3', 'color': (0, 255, 0), 'img_settlement': 'img/settlement_green.png', 'img_city': 'img/city_green.png', 'img_road': 'img/road_green.png'},
-           3: {'name': 'Player 4', 'color': (255, 153, 0), 'img_settlement': 'img/settlement_orange.png', 'img_city': 'img/city_orange.png', 'img_road': 'img/road_orange.png'}
-          }
-
-actions = [BUILD_SETTLEMENT]

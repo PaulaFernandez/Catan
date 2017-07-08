@@ -137,8 +137,8 @@ class DrawScreen:
                 pygame.draw.rect(self.screen, config.players[0]['color'], (x, y, config.road_size[0], config.road_size[1]), config.thickness)
 
     def draw_big_dices(self, dices):
-        self.draw(300, 500, 'img/dice' + str(dices[0]) + '.png', config.big_dice_size)
-        self.draw(600, 500, 'img/dice' + str(dices[1]) + '.png', config.big_dice_size)
+        self.draw(config.big_dice_x1, config.big_dice_y, 'img/dice' + str(dices[0]) + '.png', config.big_dice_size)
+        self.draw(config.big_dice_x2, config.big_dice_y, 'img/dice' + str(dices[1]) + '.png', config.big_dice_size)
 
     def draw_board(self, tiles, numbers, ports, robber_tile, players, player_turn, log, dices):
         self.draw_tiles(tiles)

@@ -25,6 +25,9 @@ class Player():
         elif resource_type == 'city':
             if len(self.cities) >= config.max_cities:
                 return False
+        elif resource_type == 'settlement':
+            if len(self.settlements) >= config.max_settlements:
+                return False
 
         return True
 
