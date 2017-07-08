@@ -14,6 +14,21 @@ class Player():
 
         self.valid_roads = []
 
+    def available_resources(self, resource_type):
+        for resource, value in config.resources[resource_type].items():
+            if self.cards[resource] < value:
+                return False
+
+        if resource_type == 'road':
+            if len(self.roads) >= config.max_roads:
+                return False
+
+        return True
+
+    def remove_resources(self, resource_type):
+        for resource, value in config.resources[resource_type].items():
+            self.cards[resource] -= value
+
     def total_cards(self):
         total = 0
 

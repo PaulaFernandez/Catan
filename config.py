@@ -2,6 +2,7 @@ import math
 
 main_color = (255, 255, 255)
 
+# Resources
 WATER = 0
 DESERT = 1
 SHEEP = 2
@@ -11,12 +12,23 @@ WHEAT = 5
 WOOD = 6
 GENERIC = 7
 
+resources = {'road': {BRICK: 1, WOOD: 1},
+             'settlement': {BRICK: 1, WOOD: 1, SHEEP: 1, WHEAT: 1},
+             'city': {ORE: 3, WHEAT: 2},
+             'special_card': {ORE: 1, WHEAT: 1, SHEEP: 1}}
+
+max_settlements = 5
+max_cities = 4
+max_roads = 15
+
+# Actions
 BUILD_SETTLEMENT = 0
 BUILD_CITY = 1
 BUILD_ROAD = 2
 THROW_DICE = 3
 SAVE_GAME = 100
 LOAD_GAME = 101
+CONTINUE_GAME = 102
 
 # Board dimensions
 x_dist = 120
@@ -164,6 +176,10 @@ save_game_size = (64, 64)
 load_game = {'img': 'img/load.png'}
 load_game_position = (925, 15)
 load_game_size = (64, 64)
+
+continue_game = {'img': 'img/next.png'}
+continue_game_position = (1000, 575)
+continue_game_size = (64, 64)
 
 roll_numbers = [2, 3, 3, 4, 4, 5, 5, 6, 6, 8, 8, 9, 9, 10, 10, 11, 11, 12]
 water_tiles = [0, 1, 2, 3, 4, 8, 9, 14, 15, 21, 22, 27, 28, 32, 33, 34, 35, 36]

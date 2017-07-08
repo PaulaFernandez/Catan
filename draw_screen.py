@@ -77,6 +77,9 @@ class DrawScreen:
         self.draw(config.save_game_position[0], config.save_game_position[1], config.save_game['img'], config.save_game_size)
         self.draw(config.load_game_position[0], config.load_game_position[1], config.load_game['img'], config.load_game_size)
 
+        # Draw continue button
+        self.draw(config.continue_game_position[0], config.continue_game_position[1], config.continue_game['img'], config.continue_game_size)
+
     def draw_current_player(self, player):
         def draw_card(i, img, label):
             self.draw(config.card_positions[i][0], config.card_positions[i][1], img, config.card_size)
@@ -94,13 +97,13 @@ class DrawScreen:
             i = draw_card(i, img['img'], str(player.cards[card_type]))
 
         # Settlements
-        i = draw_card(i, config.players[player.player_id]['img_settlement'], str(5 - len(player.settlements)))
+        i = draw_card(i, config.players[player.player_id]['img_settlement'], str(config.max_settlements - len(player.settlements)))
 
         # Cities
-        i = draw_card(i, config.players[player.player_id]['img_city'], str(4 - len(player.cities)))
+        i = draw_card(i, config.players[player.player_id]['img_city'], str(config.max_cities - len(player.cities)))
 
         # Roads
-        i = draw_card(i, config.players[player.player_id]['img_road'], str(15 - len(player.roads)))
+        i = draw_card(i, config.players[player.player_id]['img_road'], str(config.max_roads - len(player.roads)))
 
     def draw_improvements(self, players):
         for player in players:
