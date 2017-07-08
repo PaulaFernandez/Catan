@@ -93,11 +93,13 @@ class GameState:
     def next_player(self):
         if self.game_phase[0] == 1:
             self.player_turn = (self.player_turn + 1) % 4
+            self.log = "Player " + str(self.player_turn + 1) + ": throw dice"
             return
 
         if self.initial_phase_decrease == 1:
             if self.player_turn == self.initial_phase_start_player:
                 self.game_phase = (1, 0)
+                self.log = "Player " + str(self.player_turn + 1) + ": throw dice"
                 return
 
             self.player_turn = (self.player_turn - 1) % 4
@@ -136,7 +138,7 @@ class GameState:
         self.dice_resources(result)
 
         if result == 7:
-            self.game_phase = (1, 2)
+            '''self.game_phase = (1, 2)
             self.log = "Discard"
 
             for player_x in self.players:
@@ -145,7 +147,9 @@ class GameState:
 
             if len(self.players_to_discard) == 0:
                 self.game_phase = (1, 3)
-                self.log = "Move the robber"
+                self.log = "Move the robber"'''
+
+            self.game_phase = (1, 1)
         else:
             self.game_phase = (1, 1)
             self.log = "Choose your action"
@@ -192,6 +196,9 @@ class GameState:
 
         return potential_roads
 
+    def valid_city(self):
+        return self.players[self.player_turn].settlements
+
     def handle_build_settlement(self, vertex_released):
         if self.valid_settlement(vertex_released):
             self.players[self.player_turn].settlements.append(vertex_released)
@@ -204,6 +211,14 @@ class GameState:
 
         self.current_action = -1
 
+    def handle_build_city(self, vertex_released):
+        if vertex_released in self.valid_city() and self.players[self.player_turn].available_resources('city'):
+            self.players[self.player_turn].settlements.remove(vertex_released)
+            self.players[self.player_turn].cities.append(vertex_released)
+            self.players[self.player_turn].remove_resources('city')
+
+        self.current_action = -1
+
     def handle_build_road(self, road_released):
         if self.game_phase == (0, 1):
             if road_released in self.roads_from_settlement(self.initial_phase_settlement):
@@ -211,7 +226,8 @@ class GameState:
                 self.game_phase = (0, 0)
                 self.next_player()
 
-                self.log = "Player " + str(self.player_turn + 1) + ": place settlement"
+                if self.game_phase == (0, 0):
+                    self.log = "Player " + str(self.player_turn + 1) + ": place settlement"
 
         elif self.game_phase == (1, 1):
             if road_released in self.valid_roads() and self.players[self.player_turn].available_resources('road'):

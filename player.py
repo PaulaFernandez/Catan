@@ -22,6 +22,9 @@ class Player():
         if resource_type == 'road':
             if len(self.roads) >= config.max_roads:
                 return False
+        elif resource_type == 'city':
+            if len(self.cities) >= config.max_cities:
+                return False
 
         return True
 

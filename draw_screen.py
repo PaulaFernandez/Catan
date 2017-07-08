@@ -110,6 +110,12 @@ class DrawScreen:
             # Settlements
             for vertex in player.settlements:
                 self.draw(config.vertex_position[vertex][0], config.vertex_position[vertex][1], config.players[player.player_id]['img_settlement'], config.settlement_size)
+
+            # Cities
+            for vertex in player.cities:
+                self.draw(config.vertex_position[vertex][0], config.vertex_position[vertex][1], config.players[player.player_id]['img_city'], config.city_size)
+
+            # Roads
             for road in player.roads:
                 vertex_1_x = config.vertex_position[road[0]][0]
                 vertex_1_y = config.vertex_position[road[0]][1]

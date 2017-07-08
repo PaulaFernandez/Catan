@@ -67,6 +67,8 @@ class GameController:
                 self.game.next_player()
             elif self.check_click(pos) == ('action', config.BUILD_ROAD):
                 self.game.current_action = config.BUILD_ROAD
+            elif self.check_click(pos) == ('action', config.BUILD_CITY):
+                self.game.current_action = config.BUILD_CITY
 
         if self.check_click(pos) == ('action', config.SAVE_GAME):
             with open('game.pkl', 'wb') as output:
@@ -81,7 +83,7 @@ class GameController:
         self.redraw()
 
     def check_release(self, pos):
-        if self.game.current_action == config.BUILD_SETTLEMENT:
+        if self.game.current_action == config.BUILD_SETTLEMENT or self.game.current_action == config.BUILD_CITY:
             for _, vertices in config.tiles_vertex.items():
                 for _, vertex in enumerate(vertices):
                     if self.pos_in_rectangle(pos, config.vertex_position[vertex][0], config.vertex_position[vertex][1], config.vertex_size[0], config.vertex_size[1]):
@@ -110,6 +112,10 @@ class GameController:
         elif self.game.current_action == config.BUILD_ROAD:
             road_released = self.check_release(pos)
             self.game.handle_build_road(road_released)
+
+        elif self.game.current_action == config.BUILD_CITY:
+            vertex_released = self.check_release(pos)
+            self.game.handle_build_city(vertex_released)
 
         self.redraw()
         
