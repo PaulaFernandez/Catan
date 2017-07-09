@@ -90,7 +90,7 @@ class GameState:
                         roads.append((vertices[i-5 % 6], vertex))
 
         return set(roads)
-
+    
     def next_player(self):
         if self.game_phase[0] == 1:
             self.player_turn = (self.player_turn + 1) % 4
@@ -304,3 +304,17 @@ class GameState:
 
                 self.game_phase = (1, 1)
                 self.log = "Choose action"
+
+    def handle_trade_4_1(self, resource_clicked):
+        if self.players[self.player_turn].current_trade['resource_offered']:
+            self.players[self.player_turn].current_trade['resource_received'] = {resource_clicked: 1}
+
+            self.players[self.player_turn].execute_trade()
+            self.players[self.player_turn].initialize_trade()
+
+            self.game_phase = (1, 1)
+            self.log = "Choose action"
+        else:
+            if self.players[self.player_turn].available_cards({resource_clicked: 4}):
+                self.players[self.player_turn].current_trade['resource_offered'] = {resource_clicked: 4}
+                self.log = "Pick resource to receive"

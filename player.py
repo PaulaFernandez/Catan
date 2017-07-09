@@ -13,6 +13,23 @@ class Player():
         self.roads = []
 
         self.valid_roads = []
+        self.current_trade = self.initialize_trade()
+
+    @staticmethod
+    def initialize_trade():
+        return {'against_player': -1,
+                'resource_offered': {},
+                'resource_received': {}}
+
+    def execute_trade(self):
+        self.add_resources(self.current_trade['resource_received'])
+        self.remove_resources(self.current_trade['resource_offered'])
+
+    def available_cards(self, resources):
+        for resource, value in resources.items():
+            if self.cards[resource] < value:
+                return False
+        return True
 
     def available_resources(self, resource_type):
         for resource, value in config.resources[resource_type].items():

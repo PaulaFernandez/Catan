@@ -28,6 +28,7 @@ BUILD_SETTLEMENT = 0
 BUILD_CITY = 1
 BUILD_ROAD = 2
 THROW_DICE = 3
+TRADE_41 = 4
 SAVE_GAME = 100
 LOAD_GAME = 101
 CONTINUE_GAME = 102
@@ -199,3 +200,6 @@ continue_game = {'img': 'img/next.png'}
 continue_game_position = (1000, 575)
 continue_game_size = (64, 64)
 
+trade41 = {'img': 'img/trade4-1.png'}
+trade41_position = (1000, 115)
+trade41_size = (64, 64)

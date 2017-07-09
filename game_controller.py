@@ -58,6 +58,9 @@ class GameController:
             if self.pos_in_rectangle(pos, config.continue_game_position[0], config.continue_game_position[1], config.continue_game_size[0], config.continue_game_size[1]):
                 return ('action', config.CONTINUE_GAME)
 
+            if self.pos_in_rectangle(pos, config.trade41_position[0], config.trade41_position[1], config.trade41_size[0], config.trade41_size[1]):
+                return ('action', config.TRADE_41)
+
             for i, tile_pos in enumerate(config.tile_position):
                 if self.pos_in_rectangle(pos, tile_pos[0], tile_pos[1], config.numbers_size[0], config.numbers_size[1]):
                     return ('tile', i)
@@ -91,6 +94,9 @@ class GameController:
                 self.game.current_action = config.BUILD_CITY
             elif self.check_click(pos) == ('action', config.BUILD_SETTLEMENT):
                 self.game.current_action = config.BUILD_SETTLEMENT
+            elif self.check_click(pos) == ('action', config.TRADE_41):
+                self.game.game_phase = (1, 5)
+                self.game.log = "Pick resource to offer"
         elif self.game.game_phase == (1, 2):
             click = self.check_click(pos)
             if click[0] == 'card':
@@ -103,6 +109,13 @@ class GameController:
             click = self.click_in_vertex(pos)
             if click[0] == 'vertex':
                 self.game.handle_steal_from(click[1])
+        elif self.game.game_phase == (1, 5):
+            click = self.check_click(pos)
+            if click == ('action', config.TRADE_41):
+                self.game.game_phase = (1, 1)
+                self.game.log = "Choose your action"
+            elif click[0] == 'card':
+                self.game.handle_trade_4_1(click[1])
 
         if self.check_click(pos) == ('action', config.SAVE_GAME):
             with open('game.pkl', 'wb') as output:

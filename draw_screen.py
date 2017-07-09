@@ -80,6 +80,9 @@ class DrawScreen:
         # Draw continue button
         self.draw(config.continue_game_position[0], config.continue_game_position[1], config.continue_game['img'], config.continue_game_size)
 
+        # Draw trade 4-1 button
+        self.draw(config.trade41_position[0], config.trade41_position[1], config.trade41['img'], config.trade41_size)
+
     def draw_current_player(self, player):
         def draw_card(i, img, label):
             self.draw(config.card_positions[i][0], config.card_positions[i][1], img, config.card_size)
