@@ -31,9 +31,16 @@ class Player():
 
         return True
 
-    def remove_resources(self, resource_type):
-        for resource, value in config.resources[resource_type].items():
+    def add_resources(self, resources):
+        for resource, value in resources.items():
+            self.cards[resource] += value
+
+    def remove_resources(self, resources):
+        for resource, value in resources.items():
             self.cards[resource] -= value
+
+    def remove_resources_by_improvement(self, improvement):
+        self.remove_resources(config.resources[improvement])
 
     def total_cards(self):
         total = 0
@@ -56,3 +63,11 @@ class Player():
 
     def longest_road_length(self):
         return 0
+
+    def cards_as_list(self):
+        cards_list = []
+
+        for resource, number in self.cards.items():
+            cards_list = cards_list + [resource] * number
+
+        return cards_list

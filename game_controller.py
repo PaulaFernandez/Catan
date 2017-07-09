@@ -33,6 +33,13 @@ class GameController:
                                   self.game.dices,
                                   player_to_discard)
 
+    def click_in_vertex(self, pos):
+        for _, vertices in config.tiles_vertex.items():
+            for _, vertex in enumerate(vertices):
+                if self.pos_in_rectangle(pos, config.vertex_position[vertex][0], config.vertex_position[vertex][1], config.vertex_size[0], config.vertex_size[1]):
+                    return ('vertex', vertex)
+        return ('', -1)
+
     def check_click(self, pos):
         if self.game.current_action == -1:
             for i, action in enumerate(config.screen_objects):
@@ -50,6 +57,10 @@ class GameController:
 
             if self.pos_in_rectangle(pos, config.continue_game_position[0], config.continue_game_position[1], config.continue_game_size[0], config.continue_game_size[1]):
                 return ('action', config.CONTINUE_GAME)
+
+            for i, tile_pos in enumerate(config.tile_position):
+                if self.pos_in_rectangle(pos, tile_pos[0], tile_pos[1], config.numbers_size[0], config.numbers_size[1]):
+                    return ('tile', i)
 
         return ('', -1)
 
@@ -84,6 +95,14 @@ class GameController:
             click = self.check_click(pos)
             if click[0] == 'card':
                 self.game.handle_discard(click[1])
+        elif self.game.game_phase == (1, 3):
+            click = self.check_click(pos)
+            if click[0] == 'tile':
+                self.game.handle_move_robber(click[1])
+        elif self.game.game_phase == (1, 4):
+            click = self.click_in_vertex(pos)
+            if click[0] == 'vertex':
+                self.game.handle_steal_from(click[1])
 
         if self.check_click(pos) == ('action', config.SAVE_GAME):
             with open('game.pkl', 'wb') as output:
@@ -99,11 +118,7 @@ class GameController:
 
     def check_release(self, pos):
         if self.game.current_action == config.BUILD_SETTLEMENT or self.game.current_action == config.BUILD_CITY:
-            for _, vertices in config.tiles_vertex.items():
-                for _, vertex in enumerate(vertices):
-                    if self.pos_in_rectangle(pos, config.vertex_position[vertex][0], config.vertex_position[vertex][1], config.vertex_size[0], config.vertex_size[1]):
-                        return vertex
-            return -1
+            return self.click_in_vertex(pos)
 
         elif self.game.current_action == config.BUILD_ROAD:
             for _, vertices in config.tiles_vertex.items():
@@ -113,23 +128,23 @@ class GameController:
                     y = (config.vertex_position[vertex][1] + config.vertex_position[vertices[i-1]][1]) / 2
                     if self.pos_in_rectangle(pos, x, y, config.vertex_size[0], config.vertex_size[1]):
                         if vertex < vertices[i-1]:
-                            return (vertex, vertices[i-1])
+                            return ('road', (vertex, vertices[i-1]))
                         else:
-                            return (vertices[i-1], vertex)
+                            return ('road', (vertices[i-1], vertex))
 
-            return -1
+            return ('', -1)
 
     def handle_mouse_button_up(self, pos, button):
         if self.game.current_action == config.BUILD_SETTLEMENT:
-            vertex_released = self.check_release(pos)
+            _, vertex_released = self.check_release(pos)
             self.game.handle_build_settlement(vertex_released)
 
         elif self.game.current_action == config.BUILD_ROAD:
-            road_released = self.check_release(pos)
+            _, road_released = self.check_release(pos)
             self.game.handle_build_road(road_released)
 
         elif self.game.current_action == config.BUILD_CITY:
-            vertex_released = self.check_release(pos)
+            _, vertex_released = self.check_release(pos)
             self.game.handle_build_city(vertex_released)
 
         self.redraw()
