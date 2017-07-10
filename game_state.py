@@ -118,7 +118,7 @@ class GameState:
 
     def dice_resources(self, result):
         for number, tile in self.numbers:
-            if number == result:
+            if number == result and self.robber_tile != tile:
                 resource = self.tiles[tile]
 
                 for player_x in self.players:
