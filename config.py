@@ -47,9 +47,9 @@ number_y_offset = 30
 tiles_size = (112, 124)
 numbers_size = (60, 60)
 ports_size = (50, 50)
-settlement_size = (30, 30)
-city_size = (40, 30)
-road_size = (30, 30)
+settlement_size = (40, 40)
+city_size = (40, 40)
+road_size = (40, 30)
 
 # Player stats offsets
 player_stats_x = 1100
@@ -175,10 +175,10 @@ robber = {'img': 'img/robber.png'}
 roll_numbers = [2, 3, 3, 4, 4, 5, 5, 6, 6, 8, 8, 9, 9, 10, 10, 11, 11, 12]
 water_tiles = [0, 1, 2, 3, 4, 8, 9, 14, 15, 21, 22, 27, 28, 32, 33, 34, 35, 36]
 
-players = {0: {'name': 'Player 1', 'color': (255, 0, 0), 'img_settlement': 'img/settlement_red.png', 'img_city': 'img/city_red.png', 'img_road': 'img/road_red.png'},
-           1: {'name': 'Player 2', 'color': (80, 80, 255), 'img_settlement': 'img/settlement_blue.png', 'img_city': 'img/city_blue.png', 'img_road': 'img/road_blue.png'},
-           2: {'name': 'Player 3', 'color': (0, 255, 0), 'img_settlement': 'img/settlement_green.png', 'img_city': 'img/city_green.png', 'img_road': 'img/road_green.png'},
-           3: {'name': 'Player 4', 'color': (255, 153, 0), 'img_settlement': 'img/settlement_orange.png', 'img_city': 'img/city_orange.png', 'img_road': 'img/road_orange.png'}
+players = {0: {'name': 'Player 1', 'color': (182, 43, 63), 'img_settlement': 'img/settlement_red.png', 'img_city': 'img/city_red.png', 'img_road': 'img/road_red.png'},
+           1: {'name': 'Player 2', 'color': (32, 84, 200), 'img_settlement': 'img/settlement_blue.png', 'img_city': 'img/city_blue.png', 'img_road': 'img/road_blue.png'},
+           2: {'name': 'Player 3', 'color': (53, 149, 35), 'img_settlement': 'img/settlement_green.png', 'img_city': 'img/city_green.png', 'img_road': 'img/road_green.png'},
+           3: {'name': 'Player 4', 'color': (197, 116, 22), 'img_settlement': 'img/settlement_orange.png', 'img_city': 'img/city_orange.png', 'img_road': 'img/road_orange.png'}
           }
 
 throw_dice = {'img': 'img/dices.png'}
