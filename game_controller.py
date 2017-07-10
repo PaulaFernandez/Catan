@@ -40,6 +40,14 @@ class GameController:
                     return ('vertex', vertex)
         return ('', -1)
 
+    def click_in_port(self, pos):
+        for port_id, ports in config.ports_vertex.items():
+            x = config.tile_position[ports['tile']][0] + ports['offset'][0]
+            y = config.tile_position[ports['tile']][1] + ports['offset'][1]
+            if self.pos_in_rectangle(pos, x, y, config.ports_size[0], config.ports_size[1]):
+                return ('port', port_id)
+        return ('', -1)
+
     def check_click(self, pos):
         if self.game.current_action == -1:
             for i, action in enumerate(config.screen_objects):
@@ -85,6 +93,7 @@ class GameController:
                 self.game.current_action = config.THROW_DICE
                 self.game.calculate_throw_dice()
         elif self.game.game_phase == (1, 1):
+            click_port = self.click_in_port(pos)
             if self.check_click(pos) == ('action', config.CONTINUE_GAME):
                 self.game.game_phase = (1, 0)
                 self.game.next_player()
@@ -96,7 +105,10 @@ class GameController:
                 self.game.current_action = config.BUILD_SETTLEMENT
             elif self.check_click(pos) == ('action', config.TRADE_41):
                 self.game.game_phase = (1, 5)
-                self.game.log = "Pick resource to offer"
+                self.game.start_4_1_trade()
+            elif click_port[0] == 'port':
+                self.game.game_phase = (1, 5)
+                self.game.start_port_trade(click_port[1])
         elif self.game.game_phase == (1, 2):
             click = self.check_click(pos)
             if click[0] == 'card':
@@ -113,9 +125,10 @@ class GameController:
             click = self.check_click(pos)
             if click == ('action', config.TRADE_41):
                 self.game.game_phase = (1, 1)
+                self.game.players[self.game.player_turn].initialize_trade()
                 self.game.log = "Choose your action"
             elif click[0] == 'card':
-                self.game.handle_trade_4_1(click[1])
+                self.game.handle_trade(click[1])
 
         if self.check_click(pos) == ('action', config.SAVE_GAME):
             with open('game.pkl', 'wb') as output:

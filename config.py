@@ -11,6 +11,7 @@ BRICK = 4
 WHEAT = 5
 WOOD = 6
 GENERIC = 7
+PORT_4_1 = 8
 
 # Needed resources for actions
 resources = {'road': {BRICK: 1, WOOD: 1},
@@ -141,7 +142,7 @@ ports_vertex = {0: {'vert': [16, 27], 'tile': 16, 'offset': (-60, 35)},
                 3: {'vert': [5, 6], 'tile': 7, 'offset': (77, -45)},
                 4: {'vert': [15, 25], 'tile': 13, 'offset': (123, 35)},
                 5: {'vert': [36, 46], 'tile': 26, 'offset': (123, 35)},
-                6: {'vert': [52, 53], 'tile': 31, 'offset': (80, 118)},
+                6: {'vert': [52, 53], 'tile': 31, 'offset': (80, 120)},
                 7: {'vert': [49, 50], 'tile': 30, 'offset': (-15, 120)},
                 8: {'vert': [38, 39], 'tile': 23, 'offset': (-15, 120)}}
 

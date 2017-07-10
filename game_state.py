@@ -30,7 +30,8 @@ class GameState:
 
         # Game Phase
         # (0, 0): Initial placement build settlement, (0, 1): Build road
-        # (1, 0): Throw dice, (1, 1): Wait for end of turn, (1, 2): Discard, (1, 3): Move robber, (1, 4): Decide who to steal from
+        # (1, 0): Throw dice, (1, 1): Wait for end of turn, (1, 2): Discard, (1, 3): Move robber, 
+        # (1, 4): Decide who to steal from, (1, 5): Trade in ports or 4:1
         self.game_phase = (0, 0)
 
     @staticmethod
@@ -283,6 +284,34 @@ class GameState:
             if settlement[0] in config.tiles_vertex[tile]:
                 self.houses_to_steal_from.append(settlement)
 
+    def port_belongs_to_player(self, port_id):
+        for vertex in config.ports_vertex[port_id]['vert']:
+            if vertex in self.players[self.player_turn].settlements + self.players[self.player_turn].cities:
+                return True
+        return False
+    
+    def start_4_1_trade(self):
+        self.players[self.player_turn].current_trade['type'] = config.PORT_4_1
+        self.log = "Pick resource to offer"
+
+    def start_port_trade(self, port_id):
+        if self.port_belongs_to_player(port_id):
+            self.players[self.player_turn].current_trade['type'] = self.ports[port_id]
+
+            if self.ports[port_id] == config.GENERIC:
+                self.log = "Pick resource to offer"
+            else:
+                if self.players[self.player_turn].available_cards({self.ports[port_id]: 2}):
+                    self.players[self.player_turn].current_trade['resource_offered'] = {self.ports[port_id]: 2}
+                    self.log = "Pick resource to receive"
+                else:
+                    self.game_phase = (1, 1)
+                    self.log = "Choose action, no resources available"
+
+        else:
+            self.game_phase = (1, 1)
+            self.log = "Choose action"
+
     def handle_move_robber(self, tile):
         if tile not in config.water_tiles and tile != self.robber_tile:
             self.robber_tile = tile
@@ -305,7 +334,7 @@ class GameState:
                 self.game_phase = (1, 1)
                 self.log = "Choose action"
 
-    def handle_trade_4_1(self, resource_clicked):
+    def handle_trade_x_1(self, resource_clicked, x):
         if self.players[self.player_turn].current_trade['resource_offered']:
             self.players[self.player_turn].current_trade['resource_received'] = {resource_clicked: 1}
 
@@ -315,6 +344,20 @@ class GameState:
             self.game_phase = (1, 1)
             self.log = "Choose action"
         else:
-            if self.players[self.player_turn].available_cards({resource_clicked: 4}):
-                self.players[self.player_turn].current_trade['resource_offered'] = {resource_clicked: 4}
+            if self.players[self.player_turn].available_cards({resource_clicked: x}):
+                self.players[self.player_turn].current_trade['resource_offered'] = {resource_clicked: x}
                 self.log = "Pick resource to receive"
+
+    def handle_trade(self, resource_clicked):
+        if self.players[self.player_turn].current_trade['type'] == config.PORT_4_1:
+            self.handle_trade_x_1(resource_clicked, 4)
+        elif self.players[self.player_turn].current_trade['type'] == config.GENERIC:
+            self.handle_trade_x_1(resource_clicked, 3)
+        else:
+            self.players[self.player_turn].current_trade['resource_received'] = {resource_clicked: 1}
+
+            self.players[self.player_turn].execute_trade()
+            self.players[self.player_turn].initialize_trade()
+
+            self.game_phase = (1, 1)
+            self.log = "Choose action"

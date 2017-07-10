@@ -13,13 +13,14 @@ class Player():
         self.roads = []
 
         self.valid_roads = []
-        self.current_trade = self.initialize_trade()
+        self.current_trade = {}
+        self.initialize_trade()
 
-    @staticmethod
-    def initialize_trade():
-        return {'against_player': -1,
-                'resource_offered': {},
-                'resource_received': {}}
+    def initialize_trade(self):
+        self.current_trade = {'type': -1,
+                              'against_player': -1,
+                              'resource_offered': {},
+                              'resource_received': {}}
 
     def execute_trade(self):
         self.add_resources(self.current_trade['resource_received'])
