@@ -45,7 +45,7 @@ number_y_offset = 30
 # Sizes
 tiles_size = (112, 124)
 numbers_size = (60, 60)
-ports_size = (90, 90)
+ports_size = (50, 50)
 settlement_size = (30, 30)
 city_size = (40, 30)
 road_size = (30, 30)
@@ -135,15 +135,15 @@ for tile, vertices in tiles_vertex.items():
     for i, vertex in enumerate(vertices):
         vertex_position[vertex] = (tile_position[tile][0] + tile_vertex_offset[i][0], tile_position[tile][1] + tile_vertex_offset[i][1])
 
-ports_vertex = {0: {'vert': [16, 27], 'tile': 16, 'offset': (-80, 15)},
-                1: {'vert': [7, 8], 'tile': 10, 'offset': (-35, -65)},
-                2: {'vert': [2, 3], 'tile': 6, 'offset': (-35, -65)},
-                3: {'vert': [5, 6], 'tile': 7, 'offset': (55, -63)},
-                4: {'vert': [15, 25], 'tile': 13, 'offset': (100, 15)},
-                5: {'vert': [36, 46], 'tile': 26, 'offset': (100, 15)},
-                6: {'vert': [52, 53], 'tile': 31, 'offset': (55, 98)},
-                7: {'vert': [49, 50], 'tile': 30, 'offset': (-35, 100)},
-                8: {'vert': [38, 39], 'tile': 23, 'offset': (-35, 100)}}
+ports_vertex = {0: {'vert': [16, 27], 'tile': 16, 'offset': (-60, 35)},
+                1: {'vert': [7, 8], 'tile': 10, 'offset': (-15, -45)},
+                2: {'vert': [2, 3], 'tile': 6, 'offset': (-15, -45)},
+                3: {'vert': [5, 6], 'tile': 7, 'offset': (77, -45)},
+                4: {'vert': [15, 25], 'tile': 13, 'offset': (123, 35)},
+                5: {'vert': [36, 46], 'tile': 26, 'offset': (123, 35)},
+                6: {'vert': [52, 53], 'tile': 31, 'offset': (80, 118)},
+                7: {'vert': [49, 50], 'tile': 30, 'offset': (-15, 120)},
+                8: {'vert': [38, 39], 'tile': 23, 'offset': (-15, 120)}}
 
 tile_types = {WATER: {'img': 'img/water.png'},
               DESERT: {'img': 'img/desert.png', 'number': 1},
