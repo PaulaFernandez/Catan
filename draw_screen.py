@@ -62,7 +62,7 @@ class DrawScreen:
             self.screen.blit(label_knigts, (x, y))
 
             y += config.line_space
-            label_road = self.font.render('Longest road: ' + str(i.longest_road_length()), 1, config.players[key]['color'])
+            label_road = self.font.render('Longest road: ' + str(i.longest_road), 1, config.players[key]['color'])
             self.screen.blit(label_road, (x, y))
 
         x, y = config.player_stats_x, config.player_stats_y + 4 * config.player_stats_height + 4 * config.player_stats_y_offset

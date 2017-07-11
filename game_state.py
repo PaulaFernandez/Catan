@@ -1,4 +1,5 @@
 from random import shuffle, choice
+from copy import deepcopy
 import player
 import config
 
@@ -213,6 +214,77 @@ class GameState:
     def valid_city(self):
         return self.players[self.player_turn].settlements
 
+    def calculate_all_roads(self, available_roads):
+        def ends_to_explore(potential_roads):
+            for road_id, road in enumerate(potential_roads):
+                if road['start_vertex'][1] == 1:
+                    return (road_id, 'start_vertex')
+                elif road['end_vertex'][1] == 1:
+                    return (road_id, 'end_vertex')
+
+            return False
+
+        if len(available_roads) == 0:
+            return []
+
+        # Starting road
+        start_section = available_roads.pop()
+        start_road = {'sections': [start_section], 'start_vertex': (start_section[0], 1), 'end_vertex': (start_section[1], 1)}
+        potential_roads = [start_road]
+        road_end = ends_to_explore(potential_roads)
+
+        while road_end:
+            vertex = potential_roads[road_end[0]][road_end[1]][0]
+
+            # End is rival settlement
+            for player_x in (x for x in self.players if x.player_id != self.player_turn):
+                if vertex in player_x.settlements + player_x.cities:
+                    potential_roads[road_end[0]][road_end[1]] = (vertex, 0) # Can't jump over rival settlement
+
+            neighbours = self.roads_from_settlement(vertex)
+
+            valid_neighbours_found = False
+            for next_road in neighbours:
+                if next_road in self.players[self.player_turn].roads and next_road not in potential_roads[road_end[0]]['sections']:
+                    if next_road[0] == vertex:
+                        new_end = next_road[1]
+                    else:
+                        new_end = next_road[0]
+
+                    if road_end[1] == 'start_vertex':
+                        start_v = (new_end, 1)
+                        end_v = potential_roads[road_end[0]]['end_vertex']
+                    else:
+                        start_v = potential_roads[road_end[0]]['start_vertex']
+                        end_v = (new_end, 1)
+
+                    new_road = {'sections': potential_roads[road_end[0]]['sections'] + [next_road],
+                                'start_vertex': start_v,
+                                'end_vertex': end_v}
+
+                    potential_roads.append(new_road)
+                    valid_neighbours_found = True
+
+                    if next_road in available_roads:
+                        available_roads.remove(next_road)
+
+            if valid_neighbours_found:
+                potential_roads.pop(road_end[0])
+            else:
+                potential_roads[road_end[0]][road_end[1]] = (vertex, 0)
+
+            road_end = ends_to_explore(potential_roads)
+
+        all_roads = potential_roads + self.calculate_all_roads(available_roads)
+
+        return all_roads
+
+    def calculate_longest_road(self):
+        available_roads = deepcopy(self.players[self.player_turn].roads)
+        all_roads = self.calculate_all_roads(available_roads)
+        road_lengths = [len(x['sections']) for x in all_roads]
+        self.players[self.player_turn].longest_road = max(road_lengths)
+
     def handle_build_settlement(self, vertex_released):
         if self.valid_settlement(vertex_released):
 
@@ -251,6 +323,7 @@ class GameState:
             if road_released in self.valid_roads() and self.players[self.player_turn].available_resources('road'):
                 self.players[self.player_turn].roads.append(road_released)
                 self.players[self.player_turn].remove_resources_by_improvement('road')
+                self.calculate_longest_road()
 
         self.current_action = -1
 
@@ -312,6 +385,29 @@ class GameState:
             self.game_phase = (1, 1)
             self.log = "Choose action"
 
+    def check_end_game(self):
+        max_points = []
+        for player_x in self.players:
+            pl_points = player_x.points(hidden=0)
+            if len(max_points) == 0 or max_points[0][1] < pl_points:
+                max_points = [(player_x.player_id, pl_points)]
+            elif max_points[0][1] == pl_points:
+                max_points.append((player_x.player_id, pl_points))
+
+        # Is game finished?
+        if max_points[0][1] >= 10:
+            if len(max_points) == 1:
+                winner = max_points[0][0]
+            else:
+                tied_players = [player_id for player_id, points in max_points]
+                if self.player_turn in tied_players:
+                    winner = self.player_turn
+                else:
+                    winner = max_points[0][0]
+            
+            self.game_phase = (2, 0)
+            self.log = "Player " + str(winner) + " is the winner!"
+    
     def handle_move_robber(self, tile):
         if tile not in config.water_tiles and tile != self.robber_tile:
             self.robber_tile = tile
@@ -327,12 +423,15 @@ class GameState:
     def handle_steal_from(self, vertex):
         for vertex_from, player_id in self.houses_to_steal_from:
             if vertex_from == vertex:
-                card_stolen = choice(self.players[player_id].cards_as_list())
-                self.players[self.player_turn].add_resources({card_stolen: 1})
-                self.players[player_id].remove_resources({card_stolen: 1})
+                cards_list = self.players[player_id].cards_as_list()
+                if len(cards_list) > 0:
+                    card_stolen = choice(cards_list)
+                    self.players[self.player_turn].add_resources({card_stolen: 1})
+                    self.players[player_id].remove_resources({card_stolen: 1})
 
                 self.game_phase = (1, 1)
                 self.log = "Choose action"
+                return
 
     def handle_trade_x_1(self, resource_clicked, x):
         if self.players[self.player_turn].current_trade['resource_offered']:

@@ -70,7 +70,7 @@ class GameController:
                 return ('action', config.TRADE_41)
 
             for i, tile_pos in enumerate(config.tile_position):
-                if self.pos_in_rectangle(pos, tile_pos[0], tile_pos[1], config.numbers_size[0], config.numbers_size[1]):
+                if self.pos_in_rectangle(pos, tile_pos[0] + config.number_x_offset, tile_pos[1] + config.number_y_offset, config.numbers_size[0], config.numbers_size[1]):
                     return ('tile', i)
 
         return ('', -1)
@@ -96,6 +96,7 @@ class GameController:
             click_port = self.click_in_port(pos)
             if self.check_click(pos) == ('action', config.CONTINUE_GAME):
                 self.game.game_phase = (1, 0)
+                self.game.check_end_game()
                 self.game.next_player()
             elif self.check_click(pos) == ('action', config.BUILD_ROAD):
                 self.game.current_action = config.BUILD_ROAD

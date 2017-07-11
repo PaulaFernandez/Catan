@@ -7,6 +7,7 @@ class Player():
         self.cards = {config.SHEEP: 0, config.ORE: 0, config.WHEAT: 0, config.BRICK: 0, config.WOOD: 0}
         self.special_cards = []
         self.used_knights = 0
+        self.longest_road = 0
 
         self.settlements = []
         self.cities = []
@@ -78,9 +79,6 @@ class Player():
 
     def total_special_cards(self):
         return len(self.special_cards)
-
-    def longest_road_length(self):
-        return 0
 
     def cards_as_list(self):
         cards_list = []
