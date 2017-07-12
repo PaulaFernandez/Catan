@@ -30,10 +30,7 @@ class GameState:
         self.log = "Player " + str(self.player_turn + 1) + ": place settlement"
 
         # Game Phase
-        # (0, 0): Initial placement build settlement, (0, 1): Build road
-        # (1, 0): Throw dice, (1, 1): Wait for end of turn, (1, 2): Discard, (1, 3): Move robber, 
-        # (1, 4): Decide who to steal from, (1, 5): Trade in ports or 4:1
-        self.game_phase = (0, 0)
+        self.game_phase = config.PHASE_INITIAL_SETTLEMENT
 
     @staticmethod
     def generate_ports():
@@ -92,7 +89,7 @@ class GameState:
                         roads.append((vertices[i-5 % 6], vertex))
 
         return set(roads)
-    
+
     def next_player(self):
         if self.game_phase[0] == 1:
             self.player_turn = (self.player_turn + 1) % 4
@@ -101,7 +98,7 @@ class GameState:
 
         if self.initial_phase_decrease == 1:
             if self.player_turn == self.initial_phase_start_player:
-                self.game_phase = (1, 0)
+                self.game_phase = config.PHASE_THROW_DICE
                 self.log = "Player " + str(self.player_turn + 1) + ": throw dice"
                 return
 
@@ -141,21 +138,19 @@ class GameState:
         self.dice_resources(result)
 
         if result == 7:
-            self.game_phase = (1, 2)
+            self.game_phase = config.PHASE_DISCARD
 
             for player_x in self.players:
                 if player_x.total_cards() > 7:
                     self.players_to_discard.append((player_x.player_id, int(player_x.total_cards() / 2)))
 
             if len(self.players_to_discard) == 0:
-                self.game_phase = (1, 3)
+                self.game_phase = config.PHASE_MOVE_ROBBER
                 self.log = "Move the robber"
             else:
                 self.log = "Player " + str(self.players_to_discard[0][0] + 1) + ": Discard " + str(self.players_to_discard[0][1]) + " cards"
-
-            #self.game_phase = (1, 1)
         else:
-            self.game_phase = (1, 1)
+            self.game_phase = config.PHASE_WAIT
             self.log = "Choose your action"
 
     def initial_settlement_resources(self, vertex):
@@ -192,7 +187,7 @@ class GameState:
                 if settlement_clash(vertex, settlement):
                     return False
 
-        if self.game_phase == (1, 1):
+        if self.game_phase == config.PHASE_WAIT:
             if road_reaches_vertex(vertex, self.players[self.player_turn].roads) is False:
                 return False
 
@@ -288,14 +283,14 @@ class GameState:
     def handle_build_settlement(self, vertex_released):
         if self.valid_settlement(vertex_released):
 
-            if self.game_phase == (0, 0):
-                self.game_phase = (0, 1)
+            if self.game_phase == config.PHASE_INITIAL_SETTLEMENT:
+                self.game_phase = config.PHASE_INITIAL_ROAD
                 self.players[self.player_turn].settlements.append(vertex_released)
                 self.initial_phase_settlement = vertex_released
                 self.initial_settlement_resources(vertex_released)
                 self.log = "Player " + str(self.player_turn + 1) + ": place road"
 
-            elif self.game_phase == (1, 1) and self.players[self.player_turn].available_resources('settlement'):
+            elif self.game_phase == config.PHASE_WAIT and self.players[self.player_turn].available_resources('settlement'):
                 self.players[self.player_turn].remove_resources_by_improvement('settlement')
                 self.players[self.player_turn].settlements.append(vertex_released)
 
@@ -310,16 +305,16 @@ class GameState:
         self.current_action = -1
 
     def handle_build_road(self, road_released):
-        if self.game_phase == (0, 1):
+        if self.game_phase == config.PHASE_INITIAL_ROAD:
             if road_released in self.roads_from_settlement(self.initial_phase_settlement):
                 self.players[self.player_turn].roads.append(road_released)
-                self.game_phase = (0, 0)
+                self.game_phase = config.PHASE_INITIAL_SETTLEMENT
                 self.next_player()
 
-                if self.game_phase == (0, 0):
+                if self.game_phase == config.PHASE_INITIAL_SETTLEMENT:
                     self.log = "Player " + str(self.player_turn + 1) + ": place settlement"
 
-        elif self.game_phase == (1, 1):
+        elif self.game_phase == config.PHASE_WAIT:
             if road_released in self.valid_roads() and self.players[self.player_turn].available_resources('road'):
                 self.players[self.player_turn].roads.append(road_released)
                 self.players[self.player_turn].remove_resources_by_improvement('road')
@@ -341,7 +336,7 @@ class GameState:
         if len(self.players_to_discard) > 0:
             self.log = "Player " + str(self.players_to_discard[0][0] + 1) + ": discard " + str(self.players_to_discard[0][1]) + " cards"
         else:
-            self.game_phase = (1, 3)
+            self.game_phase = config.PHASE_MOVE_ROBBER
             self.log = "Player " + str(self.player_turn + 1) + ": move robber"
 
     def compute_houses_to_steal_from(self, tile):
@@ -362,7 +357,7 @@ class GameState:
             if vertex in self.players[self.player_turn].settlements + self.players[self.player_turn].cities:
                 return True
         return False
-    
+
     def start_4_1_trade(self):
         self.players[self.player_turn].current_trade['type'] = config.PORT_4_1
         self.log = "Pick resource to offer"
@@ -378,11 +373,11 @@ class GameState:
                     self.players[self.player_turn].current_trade['resource_offered'] = {self.ports[port_id]: 2}
                     self.log = "Pick resource to receive"
                 else:
-                    self.game_phase = (1, 1)
+                    self.game_phase = config.PHASE_WAIT
                     self.log = "Choose action, no resources available"
 
         else:
-            self.game_phase = (1, 1)
+            self.game_phase = config.PHASE_WAIT
             self.log = "Choose action"
 
     def check_end_game(self):
@@ -404,21 +399,21 @@ class GameState:
                     winner = self.player_turn
                 else:
                     winner = max_points[0][0]
-            
-            self.game_phase = (2, 0)
-            self.log = "Player " + str(winner) + " is the winner!"
-    
+
+            self.game_phase = config.PHASE_END_GAME
+            self.log = "Player " + str(winner + 1) + " is the winner!"
+
     def handle_move_robber(self, tile):
         if tile not in config.water_tiles and tile != self.robber_tile:
             self.robber_tile = tile
             self.compute_houses_to_steal_from(tile)
 
             if len(self.houses_to_steal_from) > 0:
-                self.game_phase = (1, 4)
+                self.game_phase = config.PHASE_STEAL_CARD
                 self.log = "Player " + str(self.player_turn + 1) + ": choose house to steal from"
 
             else:
-                self.game_phase = (1, 1)
+                self.game_phase = config.PHASE_WAIT
 
     def handle_steal_from(self, vertex):
         for vertex_from, player_id in self.houses_to_steal_from:
@@ -429,7 +424,7 @@ class GameState:
                     self.players[self.player_turn].add_resources({card_stolen: 1})
                     self.players[player_id].remove_resources({card_stolen: 1})
 
-                self.game_phase = (1, 1)
+                self.game_phase = config.PHASE_WAIT
                 self.log = "Choose action"
                 return
 
@@ -440,7 +435,7 @@ class GameState:
             self.players[self.player_turn].execute_trade()
             self.players[self.player_turn].initialize_trade()
 
-            self.game_phase = (1, 1)
+            self.game_phase = config.PHASE_WAIT
             self.log = "Choose action"
         else:
             if self.players[self.player_turn].available_cards({resource_clicked: x}):
@@ -458,5 +453,5 @@ class GameState:
             self.players[self.player_turn].execute_trade()
             self.players[self.player_turn].initialize_trade()
 
-            self.game_phase = (1, 1)
+            self.game_phase = config.PHASE_WAIT
             self.log = "Choose action"

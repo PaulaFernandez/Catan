@@ -82,22 +82,22 @@ class GameController:
             self.redraw()
             return
 
-        if self.game.game_phase == (0, 0):
+        if self.game.game_phase == config.PHASE_INITIAL_SETTLEMENT:
             if self.check_click(pos) == ('action', config.BUILD_SETTLEMENT):
                 self.game.current_action = config.BUILD_SETTLEMENT
-        elif self.game.game_phase == (0, 1):
+        elif self.game.game_phase == config.PHASE_INITIAL_ROAD:
             if self.check_click(pos) == ('action', config.BUILD_ROAD):
                 self.game.current_action = config.BUILD_ROAD
-        elif self.game.game_phase == (1, 0):
+        elif self.game.game_phase == config.PHASE_THROW_DICE:
             if self.check_click(pos) == ('action', config.THROW_DICE):
                 self.game.current_action = config.THROW_DICE
                 self.game.calculate_throw_dice()
-        elif self.game.game_phase == (1, 1):
+        elif self.game.game_phase == config.PHASE_WAIT:
             click_port = self.click_in_port(pos)
             if self.check_click(pos) == ('action', config.CONTINUE_GAME):
-                self.game.game_phase = (1, 0)
-                self.game.check_end_game()
+                self.game.game_phase = config.PHASE_THROW_DICE
                 self.game.next_player()
+                self.game.check_end_game()
             elif self.check_click(pos) == ('action', config.BUILD_ROAD):
                 self.game.current_action = config.BUILD_ROAD
             elif self.check_click(pos) == ('action', config.BUILD_CITY):
@@ -105,27 +105,27 @@ class GameController:
             elif self.check_click(pos) == ('action', config.BUILD_SETTLEMENT):
                 self.game.current_action = config.BUILD_SETTLEMENT
             elif self.check_click(pos) == ('action', config.TRADE_41):
-                self.game.game_phase = (1, 5)
+                self.game.game_phase = config.PHASE_PORTS_TRADE
                 self.game.start_4_1_trade()
             elif click_port[0] == 'port':
-                self.game.game_phase = (1, 5)
+                self.game.game_phase = config.PHASE_PORTS_TRADE
                 self.game.start_port_trade(click_port[1])
-        elif self.game.game_phase == (1, 2):
+        elif self.game.game_phase == config.PHASE_DISCARD:
             click = self.check_click(pos)
             if click[0] == 'card':
                 self.game.handle_discard(click[1])
-        elif self.game.game_phase == (1, 3):
+        elif self.game.game_phase == config.PHASE_MOVE_ROBBER:
             click = self.check_click(pos)
             if click[0] == 'tile':
                 self.game.handle_move_robber(click[1])
-        elif self.game.game_phase == (1, 4):
+        elif self.game.game_phase == config.PHASE_STEAL_CARD:
             click = self.click_in_vertex(pos)
             if click[0] == 'vertex':
                 self.game.handle_steal_from(click[1])
-        elif self.game.game_phase == (1, 5):
+        elif self.game.game_phase == config.PHASE_PORTS_TRADE:
             click = self.check_click(pos)
             if click == ('action', config.TRADE_41):
-                self.game.game_phase = (1, 1)
+                self.game.game_phase = config.PHASE_WAIT
                 self.game.players[self.game.player_turn].initialize_trade()
                 self.game.log = "Choose your action"
             elif click[0] == 'card':

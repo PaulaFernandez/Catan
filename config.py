@@ -13,6 +13,17 @@ WOOD = 6
 GENERIC = 7
 PORT_4_1 = 8
 
+# Game Phases
+PHASE_INITIAL_SETTLEMENT = (0, 0) # Initial placement: build settlement
+PHASE_INITIAL_ROAD = (0, 1)       # Initial placement: build road
+PHASE_THROW_DICE = (1, 0)         # Throw dice
+PHASE_WAIT = (1, 1)               # Choose action: wait for end of turn
+PHASE_DISCARD = (1, 2)            # Discard before moving robber
+PHASE_MOVE_ROBBER = (1, 3)        # Move robber to another tile
+PHASE_STEAL_CARD = (1, 4)         # Chosse settlement to steal from
+PHASE_PORTS_TRADE = (1, 5)        # Trade in ports (including 4:1)
+PHASE_END_GAME = (2, 0)           # End of game, player has reached 10 points
+
 # Needed resources for actions
 resources = {'road': {BRICK: 1, WOOD: 1},
              'settlement': {BRICK: 1, WOOD: 1, SHEEP: 1, WHEAT: 1},
