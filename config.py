@@ -198,11 +198,11 @@ players = {0: {'name': 'Player 1', 'color': (182, 43, 63), 'img_settlement': 'im
 
 throw_dice = {'img': 'img/dices.png'}
 throw_dice_position = (1000, 675)
-throw_dice_size = (80, 51)
-big_dice_x1 = 350
-big_dice_x2 = 650
-big_dice_y = 400
-big_dice_size = (299, 294)
+throw_dice_size = (64, 64)
+
+continue_game = {'img': 'img/next.png'}
+continue_game_position = (925, 675)
+continue_game_size = (64, 64)
 
 save_game = {'img': 'img/save.png'}
 save_game_position = (1000, 15)
@@ -212,10 +212,11 @@ load_game = {'img': 'img/load.png'}
 load_game_position = (925, 15)
 load_game_size = (64, 64)
 
-continue_game = {'img': 'img/next.png'}
-continue_game_position = (1000, 575)
-continue_game_size = (64, 64)
-
 trade41 = {'img': 'img/trade4-1.png'}
 trade41_position = (1000, 115)
 trade41_size = (64, 64)
+
+big_dice_x1 = 350
+big_dice_x2 = 650
+big_dice_y = 400
+big_dice_size = (299, 294)
