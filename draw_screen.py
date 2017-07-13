@@ -8,11 +8,20 @@ class DrawScreen:
         self.font = pygame.font.SysFont("sans-serif", 25)
 
     def draw(self, x, y, image_path, scale, angle=0):
+        def rot_center(image, angle):
+            # rotate an image while keeping its center and size
+            orig_rect = image.get_rect()
+            rot_image = pygame.transform.rotate(image, angle)
+            rot_rect = orig_rect.copy()
+            rot_rect.center = rot_image.get_rect().center
+            rot_image = rot_image.subsurface(rot_rect).copy()
+            return rot_image
+        
         image = pygame.image.load(image_path)
         image = pygame.transform.scale(image, scale)
 
         if angle != 0:
-            image = pygame.transform.rotate(image, angle)
+            image = rot_center(image, angle)
 
         self.screen.blit(image, (x, y))
 
@@ -110,14 +119,6 @@ class DrawScreen:
 
     def draw_improvements(self, players):
         for player in players:
-            # Settlements
-            for vertex in player.settlements:
-                self.draw(config.vertex_position[vertex][0], config.vertex_position[vertex][1], config.players[player.player_id]['img_settlement'], config.settlement_size)
-
-            # Cities
-            for vertex in player.cities:
-                self.draw(config.vertex_position[vertex][0], config.vertex_position[vertex][1], config.players[player.player_id]['img_city'], config.city_size)
-
             # Roads
             for road in player.roads:
                 vertex_1_x = config.vertex_position[road[0]][0]
@@ -130,14 +131,28 @@ class DrawScreen:
                 else:
                     angle = math.degrees(math.atan((vertex_1_y - vertex_2_y) / (vertex_2_x - vertex_1_x)))
 
-                self.draw((vertex_2_x + vertex_1_x) / 2, (vertex_2_y + vertex_1_y) / 2, config.players[player.player_id]['img_road'], config.road_size, angle=angle)
+                x = (vertex_2_x + vertex_1_x) / 2
+                y = (vertex_2_y + vertex_1_y) / 2    
+                self.draw(x, y, config.players[player.player_id]['img_road'], config.road_size, angle=angle)
+
+            # Settlements
+            for vertex in player.settlements:
+                self.draw(config.vertex_position[vertex][0], config.vertex_position[vertex][1], config.players[player.player_id]['img_settlement'], config.settlement_size)
+
+            # Cities
+            for vertex in player.cities:
+                self.draw(config.vertex_position[vertex][0], config.vertex_position[vertex][1], config.players[player.player_id]['img_city'], config.city_size)
 
     def draw_position_squares(self):
         for _, vertices in config.tiles_vertex.items():
             for i in range(len(vertices)):
                 x = (config.vertex_position[vertices[i]][0] + config.vertex_position[vertices[i-1]][0]) / 2
                 y = (config.vertex_position[vertices[i]][1] + config.vertex_position[vertices[i-1]][1]) / 2
-                pygame.draw.rect(self.screen, config.players[0]['color'], (x, y, config.road_size[0], config.road_size[1]), config.thickness)
+                pygame.draw.rect(self.screen, config.main_color, (x, y, config.road_size[0], config.road_size[1]), config.thickness)
+
+    def draw_vertices(self):
+        for vertex in config.vertex_position:
+            pygame.draw.rect(self.screen, config.main_color, (vertex[0], vertex[1], config.vertex_size[0], config.vertex_size[1]), config.thickness)
 
     def draw_big_dices(self, dices):
         self.draw(config.big_dice_x1, config.big_dice_y, 'img/dice' + str(dices[0]) + '.png', config.big_dice_size)
@@ -154,7 +169,8 @@ class DrawScreen:
             self.draw_current_player(players[player_to_discard])
         else:
             self.draw_current_player(players[player_turn])
-        #self.draw_position_squares()
+        # self.draw_position_squares()
+        # self.draw_vertices()
 
         if dices != (0, 0):
             self.draw_big_dices(dices)

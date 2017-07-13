@@ -45,22 +45,16 @@ SAVE_GAME = 100
 LOAD_GAME = 101
 CONTINUE_GAME = 102
 
-# Board dimensions
-x_dist = 120
-y_dist = 105
-x_offset = x_dist / 2
-total_x_offset = 5
-total_y_offset = 5
+# Numbers dimensions
+numbers_size = (60, 60)
 number_x_offset = 25
 number_y_offset = 30
 
 # Sizes
-tiles_size = (112, 124)
-numbers_size = (60, 60)
 ports_size = (50, 50)
 settlement_size = (40, 40)
 city_size = (40, 40)
-road_size = (40, 30)
+road_size = (40, 40)
 
 # Player stats offsets
 player_stats_x = 1100
@@ -125,6 +119,12 @@ tiles_vertex = {5: [0, 1, 2, 10, 9, 8],
                 30: [41, 42, 43, 51, 50, 49],
                 31: [43, 44, 45, 53, 52, 51]}
 
+# Tiles dimensions
+total_offset = 5
+tiles_size = (112, 129)
+tiles_x_offset = 112
+tiles_y_offset = 96
+
 # Position of the tiles
 done = 0
 tile_position = []
@@ -133,29 +133,33 @@ for i in range(7):
     tiles_per_row = ((4 + i) * (1 - math.floor(i / 4)) + math.floor(i / 4) * (10 - i))
 
     for j in range(tiles_per_row):
-        tile_position.append((total_x_offset + (7 - tiles_per_row) * x_offset + j * x_dist, i * y_dist + total_y_offset))
+        x = total_offset + (7 - tiles_per_row) * tiles_x_offset / 2 + j * tiles_x_offset
+        y = i * tiles_y_offset + total_offset
+        tile_position.append((x, y))
 
     done = done + tiles_per_row
 
-# Vertex position upper left corner = tile_position + tile_vertex_offset - vertex_size
+# Vertex position upper left corner = tile_position + tile_vertex_offset - vertex_size / 2
 vertex_size = (40, 40)
-tile_vertex_offset = [(-20, 10), (42, -20), (104, 10), (104, 84), (42, 114), (-20, 84)]
+tile_vertex_offset = [(0, 33), (56, 0), (112, 33), (112, 96), (56, 129), (0, 96)]
 
 # Store positions for all vertices
 vertex_position = [(0, 0) for i in range(54)]
 for tile, vertices in tiles_vertex.items():
     for i, vertex in enumerate(vertices):
-        vertex_position[vertex] = (tile_position[tile][0] + tile_vertex_offset[i][0], tile_position[tile][1] + tile_vertex_offset[i][1])
+        x = tile_position[tile][0] + tile_vertex_offset[i][0] - vertex_size[0] / 2
+        y = tile_position[tile][1] + tile_vertex_offset[i][1] - vertex_size[1] / 2
+        vertex_position[vertex] = (x, y)
 
-ports_vertex = {0: {'vert': [16, 27], 'tile': 16, 'offset': (-60, 35)},
-                1: {'vert': [7, 8], 'tile': 10, 'offset': (-15, -45)},
-                2: {'vert': [2, 3], 'tile': 6, 'offset': (-15, -45)},
-                3: {'vert': [5, 6], 'tile': 7, 'offset': (77, -45)},
-                4: {'vert': [15, 25], 'tile': 13, 'offset': (123, 35)},
-                5: {'vert': [36, 46], 'tile': 26, 'offset': (123, 35)},
-                6: {'vert': [52, 53], 'tile': 31, 'offset': (80, 120)},
-                7: {'vert': [49, 50], 'tile': 30, 'offset': (-15, 120)},
-                8: {'vert': [38, 39], 'tile': 23, 'offset': (-15, 120)}}
+ports_vertex = {0: {'vert': [16, 27], 'tile': 16, 'offset': (-55, 39.5)},
+                1: {'vert': [7, 8], 'tile': 10, 'offset': (-13, -35)},
+                2: {'vert': [2, 3], 'tile': 6, 'offset': (-13, -35)},
+                3: {'vert': [5, 6], 'tile': 7, 'offset': (75, -35)},
+                4: {'vert': [15, 25], 'tile': 13, 'offset': (117, 39.5)},
+                5: {'vert': [36, 46], 'tile': 26, 'offset': (117, 39.5)},
+                6: {'vert': [52, 53], 'tile': 31, 'offset': (78, 112)},
+                7: {'vert': [49, 50], 'tile': 30, 'offset': (-13, 112)},
+                8: {'vert': [38, 39], 'tile': 23, 'offset': (-13, 112)}}
 
 tile_types = {WATER: {'img': 'img/water.png'},
               DESERT: {'img': 'img/desert.png', 'number': 1},
