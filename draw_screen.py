@@ -16,7 +16,7 @@ class DrawScreen:
             rot_rect.center = rot_image.get_rect().center
             rot_image = rot_image.subsurface(rot_rect).copy()
             return rot_image
-        
+
         image = pygame.image.load(image_path)
         image = pygame.transform.scale(image, scale)
 
@@ -92,6 +92,9 @@ class DrawScreen:
         # Draw trade 4-1 button
         self.draw(config.trade41_position[0], config.trade41_position[1], config.trade41['img'], config.trade41_size)
 
+        # Draw buy special card button
+        self.draw(config.buy_special_card_position[0], config.buy_special_card_position[1], config.buy_special_card['img'], config.buy_special_card_size)
+
     def draw_current_player(self, player):
         def draw_card(i, img, label):
             self.draw(config.card_positions[i][0], config.card_positions[i][1], img, config.card_size)
@@ -117,6 +120,10 @@ class DrawScreen:
         # Roads
         i = draw_card(i, config.players[player.player_id]['img_road'], str(config.max_roads - len(player.roads)))
 
+        # Special Cards
+        for special_card_type in player.special_cards:
+            i = draw_card(i, config.special_cards[special_card_type]['img'], '')
+
     def draw_improvements(self, players):
         for player in players:
             # Roads
@@ -132,7 +139,7 @@ class DrawScreen:
                     angle = math.degrees(math.atan((vertex_1_y - vertex_2_y) / (vertex_2_x - vertex_1_x)))
 
                 x = (vertex_2_x + vertex_1_x) / 2
-                y = (vertex_2_y + vertex_1_y) / 2    
+                y = (vertex_2_y + vertex_1_y) / 2
                 self.draw(x, y, config.players[player.player_id]['img_road'], config.road_size, angle=angle)
 
             # Settlements

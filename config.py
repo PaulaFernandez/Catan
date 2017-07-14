@@ -13,6 +13,13 @@ WOOD = 6
 GENERIC = 7
 PORT_4_1 = 8
 
+# Special cards
+VICTORY_POINT = 0
+KNIGHT = 1
+MONOPOLY = 2
+ROAD_BUILDING = 3
+YEAR_OF_PLENTY = 4
+
 # Game Phases
 PHASE_INITIAL_SETTLEMENT = (0, 0) # Initial placement: build settlement
 PHASE_INITIAL_ROAD = (0, 1)       # Initial placement: build road
@@ -35,12 +42,19 @@ max_settlements = 5
 max_cities = 4
 max_roads = 15
 
+special_cards = {VICTORY_POINT: {'img': 'img/victory_point.png', 'count': 5},
+                 KNIGHT: {'img': 'img/knight.png', 'count': 14},
+                 MONOPOLY: {'img': 'img/monopoly.png', 'count': 2},
+                 ROAD_BUILDING: {'img': 'img/road_building.png', 'count': 2},
+                 YEAR_OF_PLENTY: {'img': 'img/year_of_plenty.png', 'count': 2}}
+
 # Actions
 BUILD_SETTLEMENT = 0
 BUILD_CITY = 1
 BUILD_ROAD = 2
 THROW_DICE = 3
 TRADE_41 = 4
+BUY_SPECIAL_CARD = 5
 SAVE_GAME = 100
 LOAD_GAME = 101
 CONTINUE_GAME = 102
@@ -215,6 +229,10 @@ load_game_size = (64, 64)
 trade41 = {'img': 'img/trade4-1.png'}
 trade41_position = (1000, 115)
 trade41_size = (64, 64)
+
+buy_special_card = {'img': 'img/card-draw.png'}
+buy_special_card_position = (925, 115)
+buy_special_card_size = (64, 64)
 
 big_dice_x1 = 350
 big_dice_x2 = 650

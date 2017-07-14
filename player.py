@@ -75,6 +75,9 @@ class Player():
         # Cities and settlements
         points = points + len(self.settlements) + 2 * len(self.cities)
 
+        if hidden == 0:
+            points += len([x for x in self.special_cards if x == config.VICTORY_POINT])
+
         return points
 
     def total_special_cards(self):
@@ -87,3 +90,8 @@ class Player():
             cards_list = cards_list + [resource] * number
 
         return cards_list
+
+    def use_special_card(self, card_type):
+        self.special_cards.remove(card_type)
+        if card_type == config.KNIGHT:
+            self.used_knights += 1

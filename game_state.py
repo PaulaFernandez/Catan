@@ -8,6 +8,7 @@ class GameState:
         self.tiles = self.generate_tiles()
         self.numbers = self.generate_numbers()
         self.ports = self.generate_ports()
+        self.special_cards = self.generate_special_cards()
         self.current_action = -1
         self.initial_phase_settlement = 0
         self.initial_phase_decrease = 0
@@ -41,19 +42,6 @@ class GameState:
         shuffle(ports)
 
         return ports
-
-    def generate_numbers(self):
-        numbers = config.roll_numbers
-        shuffle(numbers)
-
-        numbers_tiles = []
-        j = 0
-        for i in range(len(self.tiles)):
-            if self.tiles[i] != config.WATER and self.tiles[i] != config.DESERT:
-                numbers_tiles.append((numbers[j], i))
-                j += 1
-
-        return numbers_tiles
 
     @staticmethod
     def generate_tiles():
@@ -89,6 +77,28 @@ class GameState:
                         roads.append((vertices[i-5 % 6], vertex))
 
         return set(roads)
+
+    @staticmethod
+    def generate_special_cards():
+        special_cards = []
+
+        for key, value in config.special_cards.items():
+            special_cards.extend([key] * value['count'])
+        shuffle(special_cards)
+        return special_cards
+
+    def generate_numbers(self):
+        numbers = config.roll_numbers
+        shuffle(numbers)
+
+        numbers_tiles = []
+        j = 0
+        for i in range(len(self.tiles)):
+            if self.tiles[i] != config.WATER and self.tiles[i] != config.DESERT:
+                numbers_tiles.append((numbers[j], i))
+                j += 1
+
+        return numbers_tiles
 
     def next_player(self):
         if self.game_phase[0] == 1:
@@ -455,3 +465,14 @@ class GameState:
 
             self.game_phase = config.PHASE_WAIT
             self.log = "Choose action"
+
+    def handle_buy_special_card(self):
+        if self.players[self.player_turn].available_resources('special_card'):
+            if len(self.special_cards) > 0:
+                self.players[self.player_turn].remove_resources_by_improvement('special_card')
+                self.players[self.player_turn].special_cards.append(self.special_cards.pop())
+
+    def handle_play_knight(self):
+        self.players[self.player_turn].use_special_card(config.KNIGHT)
+        self.game_phase = config.PHASE_MOVE_ROBBER
+        self.log = "Player " + str(self.player_turn + 1) + ": move robber"

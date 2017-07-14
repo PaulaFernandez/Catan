@@ -54,6 +54,10 @@ class GameController:
                 if self.pos_in_rectangle(pos, config.card_positions[i][0], config.card_positions[i][1], config.card_size[0], config.card_size[1]):
                     return action
 
+            for j, special_card_type in enumerate(self.game.players[self.game.player_turn].special_cards):
+                if self.pos_in_rectangle(pos, config.card_positions[j + len(config.screen_objects)][0], config.card_positions[j + len(config.screen_objects)][1], config.card_size[0], config.card_size[1]):
+                    return ('special_card', special_card_type)
+
             if self.pos_in_rectangle(pos, config.throw_dice_position[0], config.throw_dice_position[1], config.throw_dice_size[0], config.throw_dice_size[1]):
                 return ('action', config.THROW_DICE)
 
@@ -68,6 +72,9 @@ class GameController:
 
             if self.pos_in_rectangle(pos, config.trade41_position[0], config.trade41_position[1], config.trade41_size[0], config.trade41_size[1]):
                 return ('action', config.TRADE_41)
+
+            if self.pos_in_rectangle(pos, config.buy_special_card_position[0], config.buy_special_card_position[1], config.buy_special_card_size[0], config.buy_special_card_size[1]):
+                return ('action', config.BUY_SPECIAL_CARD)
 
             for i, tile_pos in enumerate(config.tile_position):
                 if self.pos_in_rectangle(pos, tile_pos[0] + config.number_x_offset, tile_pos[1] + config.number_y_offset, config.numbers_size[0], config.numbers_size[1]):
@@ -104,9 +111,13 @@ class GameController:
                 self.game.current_action = config.BUILD_CITY
             elif self.check_click(pos) == ('action', config.BUILD_SETTLEMENT):
                 self.game.current_action = config.BUILD_SETTLEMENT
+            elif self.check_click(pos) == ('action', config.BUY_SPECIAL_CARD):
+                self.game.handle_buy_special_card()
             elif self.check_click(pos) == ('action', config.TRADE_41):
                 self.game.game_phase = config.PHASE_PORTS_TRADE
                 self.game.start_4_1_trade()
+            elif self.check_click(pos) == ('special_card', config.KNIGHT):
+                self.game.handle_play_knight()
             elif click_port[0] == 'port':
                 self.game.game_phase = config.PHASE_PORTS_TRADE
                 self.game.start_port_trade(click_port[1])
