@@ -29,6 +29,7 @@ PHASE_DISCARD = (1, 2)            # Discard before moving robber
 PHASE_MOVE_ROBBER = (1, 3)        # Move robber to another tile
 PHASE_STEAL_CARD = (1, 4)         # Chosse settlement to steal from
 PHASE_PORTS_TRADE = (1, 5)        # Trade in ports (including 4:1)
+PHASE_MONOPOLY = (1, 6)           # Choose resource to monopolise
 PHASE_END_GAME = (2, 0)           # End of game, player has reached 10 points
 
 # Needed resources for actions
@@ -211,11 +212,11 @@ players = {0: {'name': 'Player 1', 'color': (182, 43, 63), 'img_settlement': 'im
           }
 
 throw_dice = {'img': 'img/dices.png'}
-throw_dice_position = (1000, 675)
+throw_dice_position = (1000, 650)
 throw_dice_size = (64, 64)
 
 continue_game = {'img': 'img/next.png'}
-continue_game_position = (925, 675)
+continue_game_position = (925, 650)
 continue_game_size = (64, 64)
 
 save_game = {'img': 'img/save.png'}

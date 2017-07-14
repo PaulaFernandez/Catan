@@ -61,6 +61,11 @@ class Player():
     def remove_resources_by_improvement(self, improvement):
         self.remove_resources(config.resources[improvement])
 
+    def remove_all_resources(self, resource):
+        number = self.cards[resource]
+        self.cards[resource] = 0
+        return number
+
     def total_cards(self):
         total = 0
 

@@ -476,3 +476,13 @@ class GameState:
         self.players[self.player_turn].use_special_card(config.KNIGHT)
         self.game_phase = config.PHASE_MOVE_ROBBER
         self.log = "Player " + str(self.player_turn + 1) + ": move robber"
+
+    def handle_play_monopoly(self, resource):
+        self.players[self.player_turn].use_special_card(config.MONOPOLY)
+        number = 0
+        for player_x in self.players:
+            number += player_x.remove_all_resources(resource)
+
+        self.players[self.player_turn].add_resources({resource: number})
+        self.game_phase = config.PHASE_WAIT
+        self.log = "Choose action"
