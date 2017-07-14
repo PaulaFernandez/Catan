@@ -127,7 +127,16 @@ class GameState:
 
         return
 
+    def total_resources_in_play(self):
+        resources_in_play = {config.BRICK: 0, config.ORE: 0, config.WHEAT: 0, config.WOOD: 0, config.SHEEP: 0}
+        for player_x in self.players:
+            for resource in resources_in_play:
+                resources_in_play[resource] += player_x.cards[resource]
+
+        return resources_in_play
+
     def dice_resources(self, result):
+        resources_to_distribute = []
         for number, tile in self.numbers:
             if number == result and self.robber_tile != tile:
                 resource = self.tiles[tile]
@@ -135,11 +144,22 @@ class GameState:
                 for player_x in self.players:
                     for settlement in player_x.settlements:
                         if settlement in config.tiles_vertex[tile]:
-                            player_x.add_resources({resource: 1})
+                            resources_to_distribute.append((player_x.player_id, {resource: 1}))
 
                     for city in player_x.cities:
                         if city in config.tiles_vertex[tile]:
-                            player_x.add_resources({resource: 2})
+                            resources_to_distribute.append((player_x.player_id, {resource: 2}))
+
+        distribute_resource = {config.BRICK: True, config.ORE: True, config.WHEAT: True, config.WOOD: True, config.SHEEP: True}
+        resources_in_play = self.total_resources_in_play()
+        for resource, in_play in resources_in_play.items():
+            total_resources = in_play + sum([y[resource] for x, y in resources_to_distribute if resource in y])
+            if total_resources > config.max_resources:
+                distribute_resource[resource] = False
+
+        for player_id, resources in resources_to_distribute:
+            if distribute_resource[list(resources)[0]]:
+                self.players[player_id].add_resources(resources)
 
     def calculate_throw_dice(self):
         dice_1 = choice([1, 2, 3, 4, 5, 6])
@@ -509,7 +529,9 @@ class GameState:
         if self.players[self.player_turn].current_trade['resource_offered']:
             self.players[self.player_turn].current_trade['resource_received'] = {resource_clicked: 1}
 
-            self.players[self.player_turn].execute_trade()
+            resources_in_play = self.total_resources_in_play()
+            if resources_in_play[resource_clicked] < config.max_resources:
+                self.players[self.player_turn].execute_trade()
             self.players[self.player_turn].initialize_trade()
 
             self.game_phase = config.PHASE_WAIT
@@ -527,7 +549,9 @@ class GameState:
         else:
             self.players[self.player_turn].current_trade['resource_received'] = {resource_clicked: 1}
 
-            self.players[self.player_turn].execute_trade()
+            resources_in_play = self.total_resources_in_play()
+            if resources_in_play[resource_clicked] < config.max_resources:
+                self.players[self.player_turn].execute_trade()
             self.players[self.player_turn].initialize_trade()
 
             self.game_phase = config.PHASE_WAIT
@@ -560,10 +584,12 @@ class GameState:
         self.log = "Choose action"
 
     def handle_play_year_of_plenty(self, resource):
-        self.players[self.player_turn].add_resources({resource: 1})
-        self.resources_in_year_of_plenty -= 1
-        if self.resources_in_year_of_plenty == 0:
-            self.players[self.player_turn].use_special_card(config.YEAR_OF_PLENTY)
-            self.special_card_played_in_turn = 1
-            self.game_phase = config.PHASE_WAIT
-            self.log = "Choose action"
+        resources_in_play = self.total_resources_in_play()
+        if resources_in_play[resource] < config.max_resources:
+            self.players[self.player_turn].add_resources({resource: 1})
+            self.resources_in_year_of_plenty -= 1
+            if self.resources_in_year_of_plenty == 0:
+                self.players[self.player_turn].use_special_card(config.YEAR_OF_PLENTY)
+                self.special_card_played_in_turn = 1
+                self.game_phase = config.PHASE_WAIT
+                self.log = "Choose action"

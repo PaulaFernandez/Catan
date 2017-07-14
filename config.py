@@ -44,6 +44,7 @@ resources = {'road': {BRICK: 1, WOOD: 1},
 max_settlements = 5
 max_cities = 4
 max_roads = 15
+max_resources = 19
 
 special_cards = {VICTORY_POINT: {'img': 'img/victory_point.png', 'count': 5},
                  KNIGHT: {'img': 'img/knight.png', 'count': 14},
