@@ -31,6 +31,7 @@ PHASE_STEAL_CARD = (1, 4)         # Chosse settlement to steal from
 PHASE_PORTS_TRADE = (1, 5)        # Trade in ports (including 4:1)
 PHASE_MONOPOLY = (1, 6)           # Choose resource to monopolise
 PHASE_ROAD_BUILDING = (1, 7)      # Build 2 roads for free
+PHASE_YEAR_OF_PLENTY = (1, 8)     # Choose 2 resources from the bank
 PHASE_END_GAME = (2, 0)           # End of game, player has reached 10 points
 
 # Needed resources for actions

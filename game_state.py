@@ -16,6 +16,7 @@ class GameState:
         self.players_to_discard = []
         self.houses_to_steal_from = []
         self.roads_in_road_building = 0
+        self.resources_in_year_of_plenty = 0
 
         # Robber initial position
         self.robber_tile = self.tiles.index(config.DESERT)
@@ -337,7 +338,7 @@ class GameState:
                 self.calculate_longest_road()
                 self.roads_in_road_building -= 1
                 if self.roads_in_road_building == 0:
-                    self.players[self.player_turn].special_cards.remove(config.ROAD_BUILDING)
+                    self.players[self.player_turn].use_special_card(config.ROAD_BUILDING)
                     self.game_phase = config.PHASE_WAIT
                     self.log = "Choose action"
 
@@ -497,3 +498,11 @@ class GameState:
         self.players[self.player_turn].add_resources({resource: number})
         self.game_phase = config.PHASE_WAIT
         self.log = "Choose action"
+
+    def handle_play_year_of_plenty(self, resource):
+        self.players[self.player_turn].add_resources({resource: 1})
+        self.resources_in_year_of_plenty -= 1
+        if self.resources_in_year_of_plenty == 0:
+            self.players[self.player_turn].use_special_card(config.YEAR_OF_PLENTY)
+            self.game_phase = config.PHASE_WAIT
+            self.log = "Choose action"

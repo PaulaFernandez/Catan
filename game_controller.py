@@ -125,6 +125,10 @@ class GameController:
                 self.game.game_phase = config.PHASE_ROAD_BUILDING
                 self.game.log = "Build roads"
                 self.game.roads_in_road_building = 2
+            elif self.check_click(pos) == ('special_card', config.YEAR_OF_PLENTY):
+                self.game.game_phase = config.PHASE_YEAR_OF_PLENTY
+                self.game.log = "Choose resources"
+                self.game.resources_in_year_of_plenty = 2
             elif click_port[0] == 'port':
                 self.game.game_phase = config.PHASE_PORTS_TRADE
                 self.game.start_port_trade(click_port[1])
@@ -155,6 +159,10 @@ class GameController:
         elif self.game.game_phase == config.PHASE_ROAD_BUILDING:
             if self.check_click(pos) == ('action', config.BUILD_ROAD):
                 self.game.current_action = config.BUILD_ROAD
+        elif self.game.game_phase == config.PHASE_YEAR_OF_PLENTY:
+            click = self.check_click(pos)
+            if click[0] == 'card':
+                self.game.handle_play_year_of_plenty(click[1])
 
         if self.check_click(pos) == ('action', config.SAVE_GAME):
             with open('game.pkl', 'wb') as output:
