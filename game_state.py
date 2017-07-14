@@ -221,7 +221,7 @@ class GameState:
     def valid_city(self):
         return self.players[self.player_turn].settlements
 
-    def calculate_all_roads(self, available_roads):
+    def calculate_all_roads(self, available_roads, player_id):
         def ends_to_explore(potential_roads):
             for road_id, road in enumerate(potential_roads):
                 if road['start_vertex'][1] == 1:
@@ -242,17 +242,23 @@ class GameState:
 
         while road_end:
             vertex = potential_roads[road_end[0]][road_end[1]][0]
+            end_while = False
 
             # End is rival settlement
-            for player_x in (x for x in self.players if x.player_id != self.player_turn):
+            for player_x in (x for x in self.players if x.player_id != player_id):
                 if vertex in player_x.settlements + player_x.cities:
                     potential_roads[road_end[0]][road_end[1]] = (vertex, 0) # Can't jump over rival settlement
+                    end_while = True
+
+            if end_while:
+                road_end = ends_to_explore(potential_roads)
+                continue
 
             neighbours = self.roads_from_settlement(vertex)
 
             valid_neighbours_found = False
             for next_road in neighbours:
-                if next_road in self.players[self.player_turn].roads and next_road not in potential_roads[road_end[0]]['sections']:
+                if next_road in self.players[player_id].roads and next_road not in potential_roads[road_end[0]]['sections']:
                     if next_road[0] == vertex:
                         new_end = next_road[1]
                     else:
@@ -282,15 +288,40 @@ class GameState:
 
             road_end = ends_to_explore(potential_roads)
 
-        all_roads = potential_roads + self.calculate_all_roads(available_roads)
+        all_roads = potential_roads + self.calculate_all_roads(available_roads, player_id)
 
         return all_roads
 
     def calculate_longest_road(self):
-        available_roads = deepcopy(self.players[self.player_turn].roads)
-        all_roads = self.calculate_all_roads(available_roads)
-        road_lengths = [len(x['sections']) for x in all_roads]
-        self.players[self.player_turn].longest_road = max(road_lengths)
+        current_holder = -1
+        max_road = []
+
+        for player_x in self.players:
+            available_roads = deepcopy(player_x.roads)
+            all_roads = self.calculate_all_roads(available_roads, player_x.player_id)
+            road_lengths = [len(x['sections']) for x in all_roads]
+            player_x.longest_road = max(road_lengths)
+
+            if len(max_road) == 0:
+                max_road = [(player_x.player_id, player_x.longest_road)]
+            elif max_road[0][1] == player_x.longest_road:
+                max_road.append((player_x.player_id, player_x.longest_road))
+            elif max_road[0][1] < player_x.longest_road:
+                max_road = [(player_x.player_id, player_x.longest_road)]
+
+            if player_x.longest_road_badge == 1:
+                current_holder = player_x.player_id
+
+        leading_players = [player for player, _ in max_road]
+
+        if max_road[0][1] < 5 and current_holder > -1:
+            self.players[current_holder].longest_road_badge = 0
+        elif current_holder in leading_players:
+            return
+        else:
+            self.players[current_holder].longest_road_badge = 0
+            if len(leading_players) == 1:
+                self.players[leading_players[0]].longest_road_badge = 1
 
     def check_largest_army_badge(self):
         for player_x in self.players:
@@ -314,6 +345,7 @@ class GameState:
             elif self.game_phase == config.PHASE_WAIT and self.players[self.player_turn].available_resources('settlement'):
                 self.players[self.player_turn].remove_resources_by_improvement('settlement')
                 self.players[self.player_turn].settlements.append(vertex_released)
+                self.calculate_longest_road()
 
         self.current_action = -1
 
