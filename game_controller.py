@@ -56,7 +56,8 @@ class GameController:
 
             for j, special_card_type in enumerate(self.game.players[self.game.player_turn].special_cards):
                 if self.pos_in_rectangle(pos, config.card_positions[j + len(config.screen_objects)][0], config.card_positions[j + len(config.screen_objects)][1], config.card_size[0], config.card_size[1]):
-                    return ('special_card', special_card_type)
+                    if self.game.special_card_played_in_turn == 0:
+                        return ('special_card', special_card_type)
 
             if self.pos_in_rectangle(pos, config.throw_dice_position[0], config.throw_dice_position[1], config.throw_dice_size[0], config.throw_dice_size[1]):
                 return ('action', config.THROW_DICE)

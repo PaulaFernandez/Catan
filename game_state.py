@@ -17,6 +17,7 @@ class GameState:
         self.houses_to_steal_from = []
         self.roads_in_road_building = 0
         self.resources_in_year_of_plenty = 0
+        self.special_card_played_in_turn = 0
 
         # Robber initial position
         self.robber_tile = self.tiles.index(config.DESERT)
@@ -326,6 +327,8 @@ class GameState:
 
         if max_road[0][1] < 5 and current_holder > -1:
             self.players[current_holder].longest_road_badge = 0
+        elif max_road[0][1] < 5:
+            return
         elif current_holder in leading_players:
             return
         else:
@@ -390,6 +393,7 @@ class GameState:
                 self.roads_in_road_building -= 1
                 if self.roads_in_road_building == 0:
                     self.players[self.player_turn].use_special_card(config.ROAD_BUILDING)
+                    self.special_card_played_in_turn = 1
                     self.game_phase = config.PHASE_WAIT
                     self.log = "Choose action"
 
@@ -540,6 +544,7 @@ class GameState:
         if self.players[self.player_turn].used_knights >= 3:
             self.check_largest_army_badge()
 
+        self.special_card_played_in_turn = 1
         self.game_phase = config.PHASE_MOVE_ROBBER
         self.log = "Player " + str(self.player_turn + 1) + ": move robber"
 
@@ -550,6 +555,7 @@ class GameState:
             number += player_x.remove_all_resources(resource)
 
         self.players[self.player_turn].add_resources({resource: number})
+        self.special_card_played_in_turn = 1
         self.game_phase = config.PHASE_WAIT
         self.log = "Choose action"
 
@@ -558,5 +564,6 @@ class GameState:
         self.resources_in_year_of_plenty -= 1
         if self.resources_in_year_of_plenty == 0:
             self.players[self.player_turn].use_special_card(config.YEAR_OF_PLENTY)
+            self.special_card_played_in_turn = 1
             self.game_phase = config.PHASE_WAIT
             self.log = "Choose action"
