@@ -15,6 +15,7 @@ class GameState:
         self.dices = (0, 0)
         self.players_to_discard = []
         self.houses_to_steal_from = []
+        self.roads_in_road_building = 0
 
         # Robber initial position
         self.robber_tile = self.tiles.index(config.DESERT)
@@ -329,6 +330,16 @@ class GameState:
                 self.players[self.player_turn].roads.append(road_released)
                 self.players[self.player_turn].remove_resources_by_improvement('road')
                 self.calculate_longest_road()
+
+        elif self.game_phase == config.PHASE_ROAD_BUILDING:
+            if road_released in self.valid_roads():
+                self.players[self.player_turn].roads.append(road_released)
+                self.calculate_longest_road()
+                self.roads_in_road_building -= 1
+                if self.roads_in_road_building == 0:
+                    self.players[self.player_turn].special_cards.remove(config.ROAD_BUILDING)
+                    self.game_phase = config.PHASE_WAIT
+                    self.log = "Choose action"
 
         self.current_action = -1
 

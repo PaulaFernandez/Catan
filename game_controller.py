@@ -121,6 +121,10 @@ class GameController:
             elif self.check_click(pos) == ('special_card', config.MONOPOLY):
                 self.game.game_phase = config.PHASE_MONOPOLY
                 self.game.log = "Choose resource"
+            elif self.check_click(pos) == ('special_card', config.ROAD_BUILDING):
+                self.game.game_phase = config.PHASE_ROAD_BUILDING
+                self.game.log = "Build roads"
+                self.game.roads_in_road_building = 2
             elif click_port[0] == 'port':
                 self.game.game_phase = config.PHASE_PORTS_TRADE
                 self.game.start_port_trade(click_port[1])
@@ -148,6 +152,9 @@ class GameController:
             click = self.check_click(pos)
             if click[0] == 'card':
                 self.game.handle_play_monopoly(click[1])
+        elif self.game.game_phase == config.PHASE_ROAD_BUILDING:
+            if self.check_click(pos) == ('action', config.BUILD_ROAD):
+                self.game.current_action = config.BUILD_ROAD
 
         if self.check_click(pos) == ('action', config.SAVE_GAME):
             with open('game.pkl', 'wb') as output:
