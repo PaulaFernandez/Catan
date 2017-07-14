@@ -206,10 +206,17 @@ class GameState:
         return True
 
     def valid_roads(self):
+        def vertex_is_rival(self, vertex):
+            for player_x in (x for x in self.players if x.player_id != self.player_turn):
+                if vertex in player_x.settlements + player_x.cities:
+                    return True
+            return False
+
         potential_roads = set()
         for road in self.players[self.player_turn].roads:
-            for out_roads in map(self.roads_from_settlement, list(road)):
-                potential_roads = potential_roads | out_roads
+            for vertex in road:
+                if vertex_is_rival(self, vertex) is False:
+                    potential_roads = potential_roads | self.roads_from_settlement(vertex)
 
         for player_x in self.players:
             for road in player_x.roads:
@@ -221,7 +228,7 @@ class GameState:
     def valid_city(self):
         return self.players[self.player_turn].settlements
 
-    def calculate_all_roads(self, available_roads, player_id):
+    def calculate_all_roads(self, available_roads_cycle, player_id):
         def ends_to_explore(potential_roads):
             for road_id, road in enumerate(potential_roads):
                 if road['start_vertex'][1] == 1:
@@ -231,64 +238,68 @@ class GameState:
 
             return False
 
-        if len(available_roads) == 0:
+        all_roads = []
+        if len(available_roads_cycle) == 0:
             return []
 
-        # Starting road
-        start_section = available_roads.pop()
-        start_road = {'sections': [start_section], 'start_vertex': (start_section[0], 1), 'end_vertex': (start_section[1], 1)}
-        potential_roads = [start_road]
-        road_end = ends_to_explore(potential_roads)
+        for start_road in available_roads_cycle:
+            available_roads = deepcopy(available_roads_cycle)
 
-        while road_end:
-            vertex = potential_roads[road_end[0]][road_end[1]][0]
-            end_while = False
-
-            # End is rival settlement
-            for player_x in (x for x in self.players if x.player_id != player_id):
-                if vertex in player_x.settlements + player_x.cities:
-                    potential_roads[road_end[0]][road_end[1]] = (vertex, 0) # Can't jump over rival settlement
-                    end_while = True
-
-            if end_while:
-                road_end = ends_to_explore(potential_roads)
-                continue
-
-            neighbours = self.roads_from_settlement(vertex)
-
-            valid_neighbours_found = False
-            for next_road in neighbours:
-                if next_road in self.players[player_id].roads and next_road not in potential_roads[road_end[0]]['sections']:
-                    if next_road[0] == vertex:
-                        new_end = next_road[1]
-                    else:
-                        new_end = next_road[0]
-
-                    if road_end[1] == 'start_vertex':
-                        start_v = (new_end, 1)
-                        end_v = potential_roads[road_end[0]]['end_vertex']
-                    else:
-                        start_v = potential_roads[road_end[0]]['start_vertex']
-                        end_v = (new_end, 1)
-
-                    new_road = {'sections': potential_roads[road_end[0]]['sections'] + [next_road],
-                                'start_vertex': start_v,
-                                'end_vertex': end_v}
-
-                    potential_roads.append(new_road)
-                    valid_neighbours_found = True
-
-                    if next_road in available_roads:
-                        available_roads.remove(next_road)
-
-            if valid_neighbours_found:
-                potential_roads.pop(road_end[0])
-            else:
-                potential_roads[road_end[0]][road_end[1]] = (vertex, 0)
-
+            # Starting road
+            available_roads.remove(start_road)
+            start_road = {'sections': [start_road], 'start_vertex': (start_road[0], 1), 'end_vertex': (start_road[1], 1)}
+            potential_roads = [start_road]
             road_end = ends_to_explore(potential_roads)
 
-        all_roads = potential_roads + self.calculate_all_roads(available_roads, player_id)
+            while road_end:
+                vertex = potential_roads[road_end[0]][road_end[1]][0]
+                end_while = False
+
+                # End is rival settlement
+                for player_x in (x for x in self.players if x.player_id != player_id):
+                    if vertex in player_x.settlements + player_x.cities:
+                        potential_roads[road_end[0]][road_end[1]] = (vertex, 0) # Can't jump over rival settlement
+                        end_while = True
+
+                if end_while:
+                    road_end = ends_to_explore(potential_roads)
+                    continue
+
+                neighbours = self.roads_from_settlement(vertex)
+
+                valid_neighbours_found = False
+                for next_road in neighbours:
+                    if next_road in self.players[player_id].roads and next_road not in potential_roads[road_end[0]]['sections']:
+                        if next_road[0] == vertex:
+                            new_end = next_road[1]
+                        else:
+                            new_end = next_road[0]
+
+                        if road_end[1] == 'start_vertex':
+                            start_v = (new_end, 1)
+                            end_v = potential_roads[road_end[0]]['end_vertex']
+                        else:
+                            start_v = potential_roads[road_end[0]]['start_vertex']
+                            end_v = (new_end, 1)
+
+                        new_road = {'sections': potential_roads[road_end[0]]['sections'] + [next_road],
+                                    'start_vertex': start_v,
+                                    'end_vertex': end_v}
+
+                        potential_roads.append(new_road)
+                        valid_neighbours_found = True
+
+                        if next_road in available_roads:
+                            available_roads.remove(next_road)
+
+                if valid_neighbours_found:
+                    potential_roads.pop(road_end[0])
+                else:
+                    potential_roads[road_end[0]][road_end[1]] = (vertex, 0)
+
+                road_end = ends_to_explore(potential_roads)
+
+            all_roads = all_roads + potential_roads
 
         return all_roads
 
@@ -297,8 +308,7 @@ class GameState:
         max_road = []
 
         for player_x in self.players:
-            available_roads = deepcopy(player_x.roads)
-            all_roads = self.calculate_all_roads(available_roads, player_x.player_id)
+            all_roads = self.calculate_all_roads(player_x.roads, player_x.player_id)
             road_lengths = [len(x['sections']) for x in all_roads]
             player_x.longest_road = max(road_lengths)
 
