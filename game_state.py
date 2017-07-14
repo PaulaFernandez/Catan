@@ -292,6 +292,15 @@ class GameState:
         road_lengths = [len(x['sections']) for x in all_roads]
         self.players[self.player_turn].longest_road = max(road_lengths)
 
+    def check_largest_army_badge(self):
+        for player_x in self.players:
+            if player_x.used_knights >= self.players[self.player_turn].used_knights and player_x.player_id != self.player_turn:
+                return
+            else:
+                player_x.largest_army_badge = 0
+                
+        self.players[self.player_turn].largest_army_badge = 1
+
     def handle_build_settlement(self, vertex_released):
         if self.valid_settlement(vertex_released):
 
@@ -486,6 +495,9 @@ class GameState:
 
     def handle_play_knight(self):
         self.players[self.player_turn].use_special_card(config.KNIGHT)
+        if self.players[self.player_turn].used_knights >= 3:
+            self.check_largest_army_badge()
+
         self.game_phase = config.PHASE_MOVE_ROBBER
         self.log = "Player " + str(self.player_turn + 1) + ": move robber"
 

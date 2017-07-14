@@ -85,6 +85,16 @@ turn_x_offset = 230
 turn_y_offset = 20
 turn_radius = 20
 
+largest_army = {'img': 'img/largest_army.png'}
+largest_army_x_offset = 220
+largest_army_y_offset = 80
+largest_army_size = (40, 40)
+
+longest_road = {'img': 'img/longest_road.png'}
+longest_road_x_offset = 170
+longest_road_y_offset = 80
+longest_road_size = (40, 40)
+
 thickness = 3
 line_space = 20
 

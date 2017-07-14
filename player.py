@@ -8,6 +8,8 @@ class Player():
         self.special_cards = []
         self.used_knights = 0
         self.longest_road = 0
+        self.largest_army_badge = 0
+        self.longest_road_badge = 0
 
         self.settlements = []
         self.cities = []
@@ -82,6 +84,10 @@ class Player():
 
         if hidden == 0:
             points += len([x for x in self.special_cards if x == config.VICTORY_POINT])
+        if self.largest_army_badge == 1:
+            points += 2
+        if self.longest_road_badge == 1:
+            points += 2
 
         return points
 

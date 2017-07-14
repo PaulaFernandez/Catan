@@ -41,7 +41,7 @@ class DrawScreen:
         self.draw(config.tile_position[tile_num][0] + config.number_x_offset, config.tile_position[tile_num][1] + config.number_y_offset, config.robber['img'], config.numbers_size)
 
     def draw_summary(self, players, player_turn, log):
-        for key, i in enumerate(players):
+        for key, player_x in enumerate(players):
             x, y = config.player_stats_x, config.player_stats_y + key * (config.player_stats_y + config.player_stats_height)
 
             pygame.draw.rect(self.screen, config.players[key]['color'], (x, y, config.player_stats_width, config.player_stats_height), config.thickness)
@@ -50,28 +50,35 @@ class DrawScreen:
 
             if player_turn == key:
                 pygame.draw.circle(self.screen, config.players[key]['color'], (x + config.turn_x_offset, y + config.turn_y_offset), config.turn_radius, config.turn_radius)
+            if player_x.largest_army_badge == 1:
+                self.draw(x + config.largest_army_x_offset, y + config.largest_army_y_offset, config.largest_army['img'], config.largest_army_size)
+            if player_x.longest_road_badge == 1:
+                self.draw(x + config.longest_road_x_offset, y + config.longest_road_y_offset, config.longest_road['img'], config.longest_road_size)
 
             label = self.font.render(config.players[key]['name'], 1, config.players[key]['color'])
             self.screen.blit(label, (x, y))
 
             y += config.line_space
-            label_points = self.font.render('Points: ' + str(i.points()), 1, config.players[key]['color'])
+            message = 'Points: ' + str(player_x.points())
+            if key == player_turn:
+                message = message + ' (' + str(player_x.points(hidden = 0)) + ')'
+            label_points = self.font.render(message, 1, config.players[key]['color'])
             self.screen.blit(label_points, (x, y))
 
             y += config.line_space
-            label_cards = self.font.render('Cards in hand: ' + str(i.total_cards()), 1, config.players[key]['color'])
+            label_cards = self.font.render('Cards in hand: ' + str(player_x.total_cards()), 1, config.players[key]['color'])
             self.screen.blit(label_cards, (x, y))
 
             y += config.line_space
-            label_special_cards = self.font.render('Development cards in hand: ' + str(i.total_special_cards()), 1, config.players[key]['color'])
+            label_special_cards = self.font.render('Development cards in hand: ' + str(player_x.total_special_cards()), 1, config.players[key]['color'])
             self.screen.blit(label_special_cards, (x, y))
 
             y += config.line_space
-            label_knigts = self.font.render('Knights played: ' + str(i.used_knights), 1, config.players[key]['color'])
+            label_knigts = self.font.render('Knights played: ' + str(player_x.used_knights), 1, config.players[key]['color'])
             self.screen.blit(label_knigts, (x, y))
 
             y += config.line_space
-            label_road = self.font.render('Longest road: ' + str(i.longest_road), 1, config.players[key]['color'])
+            label_road = self.font.render('Longest road: ' + str(player_x.longest_road), 1, config.players[key]['color'])
             self.screen.blit(label_road, (x, y))
 
         x, y = config.player_stats_x, config.player_stats_y + 4 * config.player_stats_height + 4 * config.player_stats_y_offset
