@@ -105,3 +105,6 @@ ENV/
 
 # Git
 .xcf
+
+# Special Folder
+train_set/

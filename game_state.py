@@ -1,10 +1,14 @@
 from random import shuffle, choice
 from copy import deepcopy
+import uuid
 import player
 import config
 
 class GameState:
     def __init__(self):
+        self.uuid = uuid.uuid1()
+        self.counter = 0
+
         self.tiles = self.generate_tiles()
         self.numbers = self.generate_numbers()
         self.ports = self.generate_ports()
