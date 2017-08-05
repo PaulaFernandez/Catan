@@ -1,143 +1,16 @@
 import unittest
-import pygame
-import game_controller
+import pickle
+import game_state
 
-class test_next_player(unittest.TestCase):
+class test_check_end_game(unittest.TestCase):
     def setUp(self):
-        pygame.init()
-        screen = pygame.display.set_mode((1400, 900))
-        screen.fill((0, 0, 0))
+        self.game = game_state.GameState()
+        with open('test_check_end_game.pkl', 'rb') as input_file:
+            self.game = pickle.load(input_file)
 
-        self.game_controller = game_controller.GameController(screen)
+    def test_end_of_game(self):
+        self.assertEqual(self.game.check_end_game(), "a21e5106-7466-11e7-8c08-d55eb5a6cb3f;2;8,7,10,7")
 
-    def test_player_0_starts(self):
-        self.game_controller.game_phase = (0, 0)
-        self.game_controller.initial_phase_decrease = 0
-        self.game_controller.player_turn = self.game_controller.initial_phase_start_player = 0
-        self.game_controller.next_player()
-        self.assertEqual(self.game_controller.player_turn, 1)
-        self.game_controller.next_player()
-        self.assertEqual(self.game_controller.player_turn, 2)
-        self.game_controller.next_player()
-        self.assertEqual(self.game_controller.player_turn, 3)
-        self.game_controller.next_player()
-        self.assertEqual(self.game_controller.player_turn, 3)
-        self.game_controller.next_player()
-        self.assertEqual(self.game_controller.player_turn, 2)
-        self.game_controller.next_player()
-        self.assertEqual(self.game_controller.player_turn, 1)
-        self.game_controller.next_player()
-        self.assertEqual(self.game_controller.player_turn, 0)
-        self.game_controller.next_player()
-        self.assertEqual(self.game_controller.game_phase, (1, 0))
-        self.assertEqual(self.game_controller.player_turn, 0)
-        self.game_controller.next_player()
-        self.assertEqual(self.game_controller.player_turn, 1)
-        self.game_controller.next_player()
-        self.assertEqual(self.game_controller.player_turn, 2)
-        self.game_controller.next_player()
-        self.assertEqual(self.game_controller.player_turn, 3)
-        self.game_controller.next_player()
-        self.assertEqual(self.game_controller.player_turn, 0)
-        self.game_controller.next_player()
-        self.assertEqual(self.game_controller.player_turn, 1)
-
-    def test_player_1_starts(self):
-        self.game_controller.game_phase = (0, 0)
-        self.game_controller.initial_phase_decrease = 0
-        self.game_controller.player_turn = self.game_controller.initial_phase_start_player = 1
-        self.game_controller.next_player()
-        self.assertEqual(self.game_controller.player_turn, 2)
-        self.game_controller.next_player()
-        self.assertEqual(self.game_controller.player_turn, 3)
-        self.game_controller.next_player()
-        self.assertEqual(self.game_controller.player_turn, 0)
-        self.game_controller.next_player()
-        self.assertEqual(self.game_controller.player_turn, 0)
-        self.game_controller.next_player()
-        self.assertEqual(self.game_controller.player_turn, 3)
-        self.game_controller.next_player()
-        self.assertEqual(self.game_controller.player_turn, 2)
-        self.game_controller.next_player()
-        self.assertEqual(self.game_controller.player_turn, 1)
-        self.game_controller.next_player()
-        self.assertEqual(self.game_controller.game_phase, (1, 0))
-        self.assertEqual(self.game_controller.player_turn, 1)
-        self.game_controller.next_player()
-        self.assertEqual(self.game_controller.player_turn, 2)
-        self.game_controller.next_player()
-        self.assertEqual(self.game_controller.player_turn, 3)
-        self.game_controller.next_player()
-        self.assertEqual(self.game_controller.player_turn, 0)
-        self.game_controller.next_player()
-        self.assertEqual(self.game_controller.player_turn, 1)
-        self.game_controller.next_player()
-        self.assertEqual(self.game_controller.player_turn, 2)
-
-    def test_player_2_starts(self):
-        self.game_controller.game_phase = (0, 0)
-        self.game_controller.initial_phase_decrease = 0
-        self.game_controller.player_turn = self.game_controller.initial_phase_start_player = 2
-        self.game_controller.next_player()
-        self.assertEqual(self.game_controller.player_turn, 3)
-        self.game_controller.next_player()
-        self.assertEqual(self.game_controller.player_turn, 0)
-        self.game_controller.next_player()
-        self.assertEqual(self.game_controller.player_turn, 1)
-        self.game_controller.next_player()
-        self.assertEqual(self.game_controller.player_turn, 1)
-        self.game_controller.next_player()
-        self.assertEqual(self.game_controller.player_turn, 0)
-        self.game_controller.next_player()
-        self.assertEqual(self.game_controller.player_turn, 3)
-        self.game_controller.next_player()
-        self.assertEqual(self.game_controller.player_turn, 2)
-        self.game_controller.next_player()
-        self.assertEqual(self.game_controller.game_phase, (1, 0))
-        self.assertEqual(self.game_controller.player_turn, 2)
-        self.game_controller.next_player()
-        self.assertEqual(self.game_controller.player_turn, 3)
-        self.game_controller.next_player()
-        self.assertEqual(self.game_controller.player_turn, 0)
-        self.game_controller.next_player()
-        self.assertEqual(self.game_controller.player_turn, 1)
-        self.game_controller.next_player()
-        self.assertEqual(self.game_controller.player_turn, 2)
-        self.game_controller.next_player()
-        self.assertEqual(self.game_controller.player_turn, 3)
-
-    def test_player_3_starts(self):
-        self.game_controller.game_phase = (0, 0)
-        self.game_controller.initial_phase_decrease = 0
-        self.game_controller.player_turn = self.game_controller.initial_phase_start_player = 3
-        self.game_controller.next_player()
-        self.assertEqual(self.game_controller.player_turn, 0)
-        self.game_controller.next_player()
-        self.assertEqual(self.game_controller.player_turn, 1)
-        self.game_controller.next_player()
-        self.assertEqual(self.game_controller.player_turn, 2)
-        self.game_controller.next_player()
-        self.assertEqual(self.game_controller.player_turn, 2)
-        self.game_controller.next_player()
-        self.assertEqual(self.game_controller.player_turn, 1)
-        self.game_controller.next_player()
-        self.assertEqual(self.game_controller.player_turn, 0)
-        self.game_controller.next_player()
-        self.assertEqual(self.game_controller.player_turn, 3)
-        self.game_controller.next_player()
-        self.assertEqual(self.game_controller.game_phase, (1, 0))
-        self.assertEqual(self.game_controller.player_turn, 3)
-        self.game_controller.next_player()
-        self.assertEqual(self.game_controller.player_turn, 0)
-        self.game_controller.next_player()
-        self.assertEqual(self.game_controller.player_turn, 1)
-        self.game_controller.next_player()
-        self.assertEqual(self.game_controller.player_turn, 2)
-        self.game_controller.next_player()
-        self.assertEqual(self.game_controller.player_turn, 3)
-        self.game_controller.next_player()
-        self.assertEqual(self.game_controller.player_turn, 0)
-
-suite = unittest.TestLoader().loadTestsFromTestCase(test_next_player)
+suite = unittest.TestLoader().loadTestsFromTestCase(test_check_end_game)
 unittest.TextTestRunner(verbosity=2).run(suite)
     

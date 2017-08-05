@@ -3,8 +3,9 @@ import config
 import pygame
 
 class DrawScreen:
-    def __init__(self, screen):
-        self.screen = screen
+    def __init__(self):
+        self.screen = pygame.display.set_mode((1400, 900))
+        self.screen.fill((0, 0, 0))
         self.font = pygame.font.SysFont("sans-serif", 25)
 
     def draw(self, x, y, image_path, scale, angle=0):
@@ -173,6 +174,8 @@ class DrawScreen:
         self.draw(config.big_dice_x2, config.big_dice_y, 'img/dice' + str(dices[1]) + '.png', config.big_dice_size)
 
     def draw_board(self, tiles, numbers, ports, robber_tile, players, player_turn, log, dices, player_to_discard):
+        self.screen.fill((0, 0, 0))
+        
         self.draw_tiles(tiles)
         self.draw_numbers(tiles, numbers)
         self.draw_ports(ports)

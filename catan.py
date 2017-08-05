@@ -1,14 +1,10 @@
 import sys
 import pygame
 import game_controller
+
 pygame.init()
 
-size = width, height = 1400, 900
-black = 0, 0, 0
-screen = pygame.display.set_mode(size)
-screen.fill(black)
-
-game_controller = game_controller.GameController(screen)
+game_controller = game_controller.GameController()
 
 clock = pygame.time.Clock()
 

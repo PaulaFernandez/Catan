@@ -1,14 +1,12 @@
 import pickle
 import config
-import draw_screen
+from draw_screen import DrawScreen
 from game_state import GameState
 
 class GameController:
-    def __init__(self, screen):
+    def __init__(self):
         self.game = GameState()
-
-        self.screen = screen
-        self.draw_tool = draw_screen.DrawScreen(self.screen)
+        self.draw_tool = DrawScreen()
         self.redraw()
 
     @staticmethod
@@ -16,13 +14,6 @@ class GameController:
         return pos[0] >= x and pos[0] <= (x + width) and pos[1] >= (y) and pos[1] <= (y + height)
 
     def redraw(self):
-        self.screen.fill((0, 0, 0))
-
-        if len(self.game.players_to_discard) > 0:
-            player_to_discard = self.game.players_to_discard[0][0]
-        else:
-            player_to_discard = None
-
         self.draw_tool.draw_board(self.game.tiles,
                                   self.game.numbers,
                                   self.game.ports,
@@ -31,7 +22,7 @@ class GameController:
                                   self.game.player_turn,
                                   self.game.log,
                                   self.game.dices,
-                                  player_to_discard)
+                                  self.game.players_to_discard[0][0] if len(self.game.players_to_discard) > 0 else None)
 
     def click_in_vertex(self, pos):
         for _, vertices in config.tiles_vertex.items():
@@ -103,13 +94,16 @@ class GameController:
         elif self.game.game_phase == config.PHASE_WAIT:
             click_port = self.click_in_port(pos)
             if self.check_click(pos) == ('action', config.CONTINUE_GAME):
-                with open('train_set\\' + str(self.game.uuid) + '_' + str(self.game.counter), 'wb') as output:
-                    self.game.counter += 1
-                    pickle.dump(self.game, output, -1)
+                #with open('train_set\\' + str(self.game.uuid) + '_' + str(self.game.counter), 'wb') as output:
+                 #   self.game.counter += 1
+                  #  pickle.dump(self.game, output, -1)
                 self.game.game_phase = config.PHASE_THROW_DICE
                 self.game.special_card_played_in_turn = 0
                 self.game.next_player()
-                self.game.check_end_game()
+                result = self.game.check_end_game()
+                #if result:
+                    #with open("train_set/winners.txt", "a") as results:
+                     #   print(result, file=results)
             elif self.check_click(pos) == ('action', config.BUILD_ROAD):
                 self.game.current_action = config.BUILD_ROAD
             elif self.check_click(pos) == ('action', config.BUILD_CITY):

@@ -503,6 +503,10 @@ class GameState:
 
             self.game_phase = config.PHASE_END_GAME
             self.log = "Player " + str(winner + 1) + " is the winner!"
+            points = [str(player_x.points(hidden=0)) for player_x in self.players]
+            return ";".join([str(self.uuid), str(winner), ",".join(points)])
+
+        return None
 
     def handle_move_robber(self, tile):
         if tile not in config.water_tiles and tile != self.robber_tile:
