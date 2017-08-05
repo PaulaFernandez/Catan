@@ -366,7 +366,7 @@ class GameState:
                 return
             else:
                 player_x.largest_army_badge = 0
-                
+
         self.players[self.player_turn].largest_army_badge = 1
 
     def handle_build_settlement(self, vertex_released):

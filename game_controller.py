@@ -94,16 +94,16 @@ class GameController:
         elif self.game.game_phase == config.PHASE_WAIT:
             click_port = self.click_in_port(pos)
             if self.check_click(pos) == ('action', config.CONTINUE_GAME):
-                #with open('train_set\\' + str(self.game.uuid) + '_' + str(self.game.counter), 'wb') as output:
-                 #   self.game.counter += 1
-                  #  pickle.dump(self.game, output, -1)
+                with open('train_set\\' + str(self.game.uuid) + '_' + str(self.game.counter), 'wb') as output:
+                    self.game.counter += 1
+                    pickle.dump(self.game, output, -1)
                 self.game.game_phase = config.PHASE_THROW_DICE
                 self.game.special_card_played_in_turn = 0
                 self.game.next_player()
                 result = self.game.check_end_game()
-                #if result:
-                    #with open("train_set/winners.txt", "a") as results:
-                     #   print(result, file=results)
+                if result:
+                    with open("train_set/winners.txt", "a") as results:
+                        print(result, file=results)
             elif self.check_click(pos) == ('action', config.BUILD_ROAD):
                 self.game.current_action = config.BUILD_ROAD
             elif self.check_click(pos) == ('action', config.BUILD_CITY):

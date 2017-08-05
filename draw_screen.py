@@ -62,7 +62,7 @@ class DrawScreen:
             y += config.line_space
             message = 'Points: ' + str(player_x.points())
             if key == player_turn:
-                message = message + ' (' + str(player_x.points(hidden = 0)) + ')'
+                message = message + ' (' + str(player_x.points(hidden=0)) + ')'
             label_points = self.font.render(message, 1, config.players[key]['color'])
             self.screen.blit(label_points, (x, y))
 
@@ -175,7 +175,7 @@ class DrawScreen:
 
     def draw_board(self, tiles, numbers, ports, robber_tile, players, player_turn, log, dices, player_to_discard):
         self.screen.fill((0, 0, 0))
-        
+
         self.draw_tiles(tiles)
         self.draw_numbers(tiles, numbers)
         self.draw_ports(ports)
