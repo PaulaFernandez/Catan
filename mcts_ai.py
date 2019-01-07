@@ -2,6 +2,7 @@ from math import sqrt, log
 from copy import deepcopy
 import random
 import config
+import pickle
 
 class Node:
     """ A node in the game tree. Note wins is always from the viewpoint of player_turn.
@@ -73,13 +74,13 @@ class DiceNode(Node):
         self.untriedMoves = [] # future child nodes
         self.player_turn = state.player_turn # the only part of the state that the Node needs later
 
-        for i in range(2, 13):
-            self.AddChild((config.THROW_DICE, i), state)
+        if self.move == (3,):
+            for i in range(2, 13):
+                self.AddChild((config.THROW_DICE, i), state)
 
     def calculate_throw_dice(self):
         dice_1 = random.choice([1, 2, 3, 4, 5, 6])
         dice_2 = random.choice([1, 2, 3, 4, 5, 6])
-        self.dices = (dice_1, dice_2)
 
         result = dice_1 + dice_2
         self.execute_dice_result(result)
@@ -121,11 +122,14 @@ class MCTS_AI:
 
             # Rollout - this can often be made orders of magnitude quicker using a state.GetRandomMove() function
             moves = state.ai_get_moves()
-            i = 0
+            m = 0
             while moves != []: # while state is non-terminal
                 state.ai_do_move(random.choice(moves))
                 moves = state.ai_get_moves()
-                i += 1
+                m += 1
+
+            #with open('train_set\\' + str(state.uuid) + '_' + str(i), 'wb') as output:
+            #    pickle.dump(state, output, -1)
 
             # Backpropagate
             while node != None: # backpropagate from the expanded node and work back to the root node

@@ -1,6 +1,6 @@
 import math
 
-player_is_human = {0: 1,
+player_is_human = {0: 0,
                    1: 0,
                    2: 0,
                    3: 0}
@@ -186,6 +186,40 @@ for tile, vertices in tiles_vertex.items():
         x = tile_position[tile][0] + tile_vertex_offset[i][0] - vertex_size[0] / 2
         y = tile_position[tile][1] + tile_vertex_offset[i][1] - vertex_size[1] / 2
         vertex_position[vertex] = (x, y)
+
+roads_from_settlement = []
+for s in range(54):
+    roads = []
+    for _, vertices in tiles_vertex.items():
+        for i, vertex in enumerate(vertices):
+            if vertex == s:
+                if vertex < vertices[i-1]:
+                    roads.append((vertex, vertices[i-1]))
+                else:
+                    roads.append((vertices[i-1], vertex))
+                if vertex < vertices[i-5 % 6]:
+                    roads.append((vertex, vertices[i-5 % 6]))
+                else:
+                    roads.append((vertices[i-5 % 6], vertex))
+
+    roads_from_settlement.append(set(roads))
+
+settlement_clash = {}
+for vertex_1 in range(54):
+    for vertex_2 in range(54):
+        if vertex_1 == vertex_2:
+            settlement_clash[(vertex_1, vertex_2)] = True
+        else:
+            for _, vertices in tiles_vertex.items():
+                if vertex_1 in vertices and vertex_2 in vertices:
+                    distance = abs(vertices.index(vertex_1) - vertices.index(vertex_2))
+                    if distance == 1 or distance == 5:
+                        settlement_clash[(vertex_1, vertex_2)] = True
+                    else:
+                        settlement_clash[(vertex_1, vertex_2)] = False
+            if (vertex_1, vertex_2) not in settlement_clash:
+                settlement_clash[(vertex_1, vertex_2)] = False
+            
 
 ports_vertex = {0: {'vert': [16, 27], 'tile': 16, 'offset': (-55, 39.5)},
                 1: {'vert': [7, 8], 'tile': 10, 'offset': (-13, -35)},

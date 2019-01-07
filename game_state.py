@@ -33,8 +33,10 @@ class GameState:
             self.players.append(player.Player(i, config.player_is_human[i]))
 
             if config.player_is_human[i] == 0:
-                self.players[i].ai = MCTS_AI(1000)
+                self.players[i].ai = MCTS_AI(1)
 
+        self.max_road = {0: 1, 1: 1, 2: 1, 3: 1}
+        
         # Starting player
         self.player_turn = choice([0, 1, 2, 3])
         self.initial_phase_start_player = self.player_turn
@@ -75,20 +77,7 @@ class GameState:
 
     @staticmethod
     def roads_from_settlement(sett_num):
-        roads = []
-        for _, vertices in config.tiles_vertex.items():
-            for i, vertex in enumerate(vertices):
-                if vertex == sett_num:
-                    if vertex < vertices[i-1]:
-                        roads.append((vertex, vertices[i-1]))
-                    else:
-                        roads.append((vertices[i-1], vertex))
-                    if vertex < vertices[i-5 % 6]:
-                        roads.append((vertex, vertices[i-5 % 6]))
-                    else:
-                        roads.append((vertices[i-5 % 6], vertex))
-
-        return set(roads)
+        return config.roads_from_settlement[sett_num]
 
     @staticmethod
     def generate_special_cards():
@@ -206,16 +195,7 @@ class GameState:
 
     def valid_settlement(self, vertex):
         def settlement_clash(vertex_1, vertex_2):
-            if vertex_1 == vertex_2:
-                return True
-
-            for _, vertices in config.tiles_vertex.items():
-                if vertex_1 in vertices and vertex_2 in vertices:
-                    distance = abs(vertices.index(vertex_1) - vertices.index(vertex_2))
-                    if distance == 1 or distance == 5:
-                        return True
-
-            return False
+            return config.settlement_clash[(vertex_1, vertex_2)]
 
         def road_reaches_vertex(vertex, player_roads):
             for road in player_roads:
@@ -336,37 +316,40 @@ class GameState:
 
         return all_roads
 
-    def calculate_longest_road(self):
+    def calculate_longest_road(self, player_id):
         current_holder = -1
-        max_road = []
+
+        all_roads = self.calculate_all_roads(self.players[player_id].roads, player_id)
+        road_lengths = [len(x['sections']) for x in all_roads]
+        self.max_road[player_id] = max(road_lengths)
 
         for player_x in self.players:
-            all_roads = self.calculate_all_roads(player_x.roads, player_x.player_id)
-            road_lengths = [len(x['sections']) for x in all_roads]
-            player_x.longest_road = max(road_lengths)
-
-            if len(max_road) == 0:
-                max_road = [(player_x.player_id, player_x.longest_road)]
-            elif max_road[0][1] == player_x.longest_road:
-                max_road.append((player_x.player_id, player_x.longest_road))
-            elif max_road[0][1] < player_x.longest_road:
-                max_road = [(player_x.player_id, player_x.longest_road)]
-
             if player_x.longest_road_badge == 1:
                 current_holder = player_x.player_id
 
-        leading_players = [player for player, _ in max_road]
+        if self.max_road[player_id] < 5:
+            if current_holder == player_id:
+                self.players[player_id].longest_road_badge = 0
 
-        if max_road[0][1] < 5 and current_holder > -1:
-            self.players[current_holder].longest_road_badge = 0
-        elif max_road[0][1] < 5:
-            return
-        elif current_holder in leading_players:
-            return
+                long_road = [(-1, 0)]
+                for player_x in self.players:
+                    if self.max_road[player_x.player_id] > long_road[0][1]:
+                        long_road = [(player_x.player_id, self.max_road[player_x.player_id])]
+                    elif self.max_road[player_x.player_id] == long_road[0][1]:
+                        long_road.append((player_x.player_id, self.max_road[player_x.player_id]))
+
+                if len(long_road) == 1 and long_road[0][0] != -1:
+                    self.players[long_road[0][0]].longest_road_badge = 1
+            else:
+                return
         else:
-            self.players[current_holder].longest_road_badge = 0
-            if len(leading_players) == 1:
-                self.players[leading_players[0]].longest_road_badge = 1
+            if current_holder == -1:
+                self.players[player_id].longest_road_badge = 1
+            elif self.max_road[current_holder] >= self.max_road[player_id]:
+                return
+            else:
+                self.players[current_holder].longest_road_badge = 0
+                self.players[player_id].longest_road_badge = 1
 
     def check_largest_army_badge(self):
         for player_x in self.players:
@@ -390,7 +373,7 @@ class GameState:
             elif self.game_phase == config.PHASE_WAIT and self.players[self.player_turn].available_resources('settlement'):
                 self.players[self.player_turn].remove_resources_by_improvement('settlement')
                 self.players[self.player_turn].settlements.append(vertex_released)
-                self.calculate_longest_road()
+                #self.calculate_longest_road()
 
         self.current_action = -1
 
@@ -416,12 +399,12 @@ class GameState:
             if road_released in self.valid_roads() and self.players[self.player_turn].available_resources('road'):
                 self.players[self.player_turn].roads.append(road_released)
                 self.players[self.player_turn].remove_resources_by_improvement('road')
-                self.calculate_longest_road()
+                self.calculate_longest_road(self.player_turn)
 
         elif self.game_phase == config.PHASE_ROAD_BUILDING:
             if road_released in self.valid_roads():
                 self.players[self.player_turn].roads.append(road_released)
-                self.calculate_longest_road()
+                self.calculate_longest_road(self.player_turn)
                 self.roads_in_road_building -= 1
                 if self.roads_in_road_building == 0:
                     self.players[self.player_turn].use_special_card(config.ROAD_BUILDING)

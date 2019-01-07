@@ -83,7 +83,8 @@ class GameController:
 
         if self.game.players[self.game.player_turn].is_human == 0:
             if self.check_click(pos) == ('action', config.CONTINUE_GAME):
-                self.game.players[self.game.player_turn].ai.move(self.game)
+                move = self.game.players[self.game.player_turn].ai.move(self.game)
+                self.game.ai_do_move(move)
             return
 
         if self.game.game_phase == config.PHASE_INITIAL_SETTLEMENT:
