@@ -3,6 +3,7 @@ from copy import deepcopy
 import uuid
 import player
 import config
+from mcts_ai import MCTS_AI
 
 class GameState:
     def __init__(self):
@@ -22,13 +23,17 @@ class GameState:
         self.roads_in_road_building = 0
         self.resources_in_year_of_plenty = 0
         self.special_card_played_in_turn = 0
+        self.winner = None
 
         # Robber initial position
         self.robber_tile = self.tiles.index(config.DESERT)
 
         self.players = []
         for i in range(4): # 4 players
-            self.players.append(player.Player(i))
+            self.players.append(player.Player(i, config.player_is_human[i]))
+
+            if config.player_is_human[i] == 0:
+                self.players[i].ai = MCTS_AI(1000)
 
         # Starting player
         self.player_turn = choice([0, 1, 2, 3])
@@ -171,6 +176,9 @@ class GameState:
         self.dices = (dice_1, dice_2)
 
         result = dice_1 + dice_2
+        self.execute_dice_result(result)
+
+    def execute_dice_result(self, result):
         self.log = "Dice result = " + str(result)
         self.dice_resources(result)
 
@@ -493,18 +501,18 @@ class GameState:
         # Is game finished?
         if max_points[0][1] >= 10:
             if len(max_points) == 1:
-                winner = max_points[0][0]
+                self.winner = max_points[0][0]
             else:
                 tied_players = [player_id for player_id, points in max_points]
                 if self.player_turn in tied_players:
-                    winner = self.player_turn
+                    self.winner = self.player_turn
                 else:
-                    winner = max_points[0][0]
+                    self.winner = max_points[0][0]
 
             self.game_phase = config.PHASE_END_GAME
-            self.log = "Player " + str(winner + 1) + " is the winner!"
+            self.log = "Player " + str(self.winner + 1) + " is the winner!"
             points = [str(player_x.points(hidden=0)) for player_x in self.players]
-            return ";".join([str(self.uuid), str(winner), ",".join(points)])
+            return ";".join([str(self.uuid), str(self.winner), ",".join(points)])
 
         return None
 
@@ -601,3 +609,89 @@ class GameState:
                 self.special_card_played_in_turn = 1
                 self.game_phase = config.PHASE_WAIT
                 self.log = "Choose action"
+
+    def continue_game(self):
+        self.game_phase = config.PHASE_THROW_DICE
+        self.special_card_played_in_turn = 0
+        self.next_player()
+        return self.check_end_game()
+    
+    def ai_get_moves(self):
+        moves = []
+
+        if self.game_phase == config.PHASE_INITIAL_SETTLEMENT:
+            for i in range(len(config.vertex_position)):
+                if self.valid_settlement(i):
+                    moves.append((config.BUILD_SETTLEMENT, i))
+        elif self.game_phase == config.PHASE_INITIAL_ROAD:
+            for r in self.roads_from_settlement(self.initial_phase_settlement):
+                moves.append((config.BUILD_ROAD, r))
+        elif self.game_phase == config.PHASE_THROW_DICE:
+            moves.append((config.THROW_DICE,))
+        elif self.game_phase == config.PHASE_WAIT:
+            # Settlements
+            if self.players[self.player_turn].available_resources('settlement'):
+                for i in range(len(config.vertex_position)):
+                    if self.valid_settlement(i):
+                        moves.append((config.BUILD_SETTLEMENT, i))
+            # Cities
+            if self.players[self.player_turn].available_resources('city'):
+                for s in self.valid_city():
+                    moves.append((config.BUILD_CITY, s))
+            # Roads
+            if self.players[self.player_turn].available_resources('road'):
+                for r in self.valid_roads():
+                    moves.append((config.BUILD_ROAD, r))
+            # Trade 4 - 1
+            for key in config.card_types:
+                if self.players[self.player_turn].available_cards({key: 4}):
+                    for key2 in config.card_types:
+                        if key != key2:
+                            moves.append((config.TRADE_41, (key, key2)))
+            # End Turn
+            moves.append((config.CONTINUE_GAME,))
+        elif self.game_phase == config.PHASE_MOVE_ROBBER:
+            for key in config.tiles_vertex:
+                moves.append((config.MOVE_ROBBER, key))
+        elif self.game_phase == config.PHASE_STEAL_CARD:
+            self.compute_houses_to_steal_from(self.robber_tile)
+            for h in self.houses_to_steal_from:
+                moves.append((config.STEAL_FROM_HOUSE, h))
+        elif self.game_phase == config.PHASE_DISCARD:
+            for key in config.card_types:
+                if self.players[self.players_to_discard[0][0]].available_cards({key: 1}):
+                    moves.append((config.DISCARD, key))
+
+        return moves
+
+    def ai_do_move(self, move):
+        if move[0] == config.BUILD_SETTLEMENT:
+            self.handle_build_settlement(move[1])
+        elif move[0] == config.BUILD_ROAD:
+            self.handle_build_road(move[1])
+        elif move[0] == config.BUILD_CITY:
+            self.handle_build_city(move[1])
+        elif move[0] == config.THROW_DICE:
+            if len(move) == 1:
+                self.calculate_throw_dice()
+        elif move[0] == config.CONTINUE_GAME:
+            self.continue_game()
+        elif move[0] == config.TRADE_41:
+            self.start_4_1_trade()
+            self.handle_trade(move[1][0])
+            self.handle_trade(move[1][1])
+        elif move[0] == config.MOVE_ROBBER:
+            self.handle_move_robber(move[1])
+        elif move[0] == config.STEAL_FROM_HOUSE:
+            self.handle_steal_from(move[1][0])
+        elif move[0] == config.DISCARD:
+            self.handle_discard(move[1])
+
+    def ai_get_result(self, player):
+        if self.game_phase == config.PHASE_END_GAME:
+            if self.winner == player:
+                return 1
+            else:
+                return 0
+        else:
+            raise Exception("AI checking result when game has not finished")

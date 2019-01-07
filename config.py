@@ -1,5 +1,10 @@
 import math
 
+player_is_human = {0: 1,
+                   1: 0,
+                   2: 0,
+                   3: 0}
+
 main_color = (255, 255, 255)
 
 # Resources
@@ -59,6 +64,9 @@ BUILD_ROAD = 2
 THROW_DICE = 3
 TRADE_41 = 4
 BUY_SPECIAL_CARD = 5
+MOVE_ROBBER = 6
+STEAL_FROM_HOUSE = 7
+DISCARD = 8
 SAVE_GAME = 100
 LOAD_GAME = 101
 CONTINUE_GAME = 102

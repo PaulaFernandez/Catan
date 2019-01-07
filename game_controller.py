@@ -81,6 +81,11 @@ class GameController:
             self.redraw()
             return
 
+        if self.game.players[self.game.player_turn].is_human == 0:
+            if self.check_click(pos) == ('action', config.CONTINUE_GAME):
+                self.game.players[self.game.player_turn].ai.move(self.game)
+            return
+
         if self.game.game_phase == config.PHASE_INITIAL_SETTLEMENT:
             if self.check_click(pos) == ('action', config.BUILD_SETTLEMENT):
                 self.game.current_action = config.BUILD_SETTLEMENT
@@ -97,10 +102,7 @@ class GameController:
                 with open('train_set\\' + str(self.game.uuid) + '_' + str(self.game.counter), 'wb') as output:
                     self.game.counter += 1
                     pickle.dump(self.game, output, -1)
-                self.game.game_phase = config.PHASE_THROW_DICE
-                self.game.special_card_played_in_turn = 0
-                self.game.next_player()
-                result = self.game.check_end_game()
+                result = self.game.continue_game()
                 if result:
                     with open("train_set/winners.txt", "a") as results:
                         print(result, file=results)

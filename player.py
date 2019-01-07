@@ -1,8 +1,10 @@
 import config
 
 class Player():
-    def __init__(self, player_id):
+    def __init__(self, player_id, is_human):
         self.player_id = player_id
+        self.is_human = is_human
+        self.ai = None
 
         self.cards = {config.SHEEP: 0, config.ORE: 0, config.WHEAT: 0, config.BRICK: 0, config.WOOD: 0}
         self.special_cards = []
