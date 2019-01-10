@@ -1,6 +1,6 @@
 import math
 
-player_is_human = {0: 0,
+player_is_human = {0: 1,
                    1: 0,
                    2: 0,
                    3: 0}

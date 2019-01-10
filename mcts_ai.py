@@ -8,55 +8,55 @@ class Node:
     """ A node in the game tree. Note wins is always from the viewpoint of player_turn.
         Crashes if state not specified.
     """
-    def __init__(self, move = None, parent = None, state = None):
-        self.move = move # the move that got us to this node - "None" for the root node
+    def __init__(self, player, parent = None, move = None):
+        self.current_player = player
         self.parentNode = parent # "None" for the root node
+        self.move = move
         self.childNodes = []
+        self.child_moves = []
+        self.possible_moves = []
+        self.is_random = False
         self.wins = 0
         self.visits = 0
-        self.untriedMoves = state.ai_get_moves() # future child nodes
-        self.player_turn = state.player_turn # the only part of the state that the Node needs later
+        self.available = 0
         
     def UCTSelectChild(self):
-        """ Use the UCB1 formula to select a child node. Often a constant UCTK is applied so we have
-            lambda c: c.wins/c.visits + UCTK * sqrt(2*log(self.visits)/c.visits to vary the amount of
-            exploration versus exploitation.
-        """
-        s = sorted(self.childNodes, key = lambda c: c.wins/c.visits + sqrt(2*log(self.visits)/c.visits))[-1]
+        potential_moves = []
+        
+        for m in self.possible_moves:
+            n = self.childNodes[self.child_moves.index(m)]
+            n.available += 1
+            potential_moves.append(n)
+        
+        s = sorted(potential_moves, key = lambda c: c.wins/c.visits + sqrt(2*log(c.available)/c.visits))[-1]
         return s
     
-    def AddChild(self, m, s):
-        """ Remove m from untriedMoves and add a new child node for this move.
-            Return the added child node
-        """
-        if m[0] == config.THROW_DICE:
-            n = DiceNode(move = m, parent = self, state = s)
-        else:
-            n = Node(move = m, parent = self, state = s)
-        self.untriedMoves.remove(m)
-        self.childNodes.append(n)
-        return n
-    
-    def Update(self, result):
-        """ Update this node - one additional visit and result additional wins. result must be from the viewpoint of playerJustmoved.
-        """
+    def update(self, result):
         self.visits += 1
         self.wins += result
-
-    def __repr__(self):
-        return "[M:" + str(self.move) + " W/V:" + str(self.wins) + "/" + str(self.visits) + " U:" + str(self.untriedMoves) + "]"
-
-    def TreeToString(self, indent):
-        s = self.IndentString(indent) + str(self)
-        for c in self.childNodes:
-             s += c.TreeToString(indent+1)
-        return s
-
-    def IndentString(self,indent):
-        s = "\n"
-        for i in range (1,indent+1):
-            s += "| "
-        return s
+        
+    def get_possible_moves(self, state):
+        self.possible_moves = state.ai_get_moves()
+        return self.possible_moves
+    
+    def check_untried(self, state):
+        self.get_possible_moves(state)
+        
+        possible_expansion = []
+        for m in self.possible_moves:
+            if m not in self.child_moves:
+                possible_expansion.append(m)
+                
+        return possible_expansion
+    
+    def add_child(self, player, move):
+        if move[0] == config.THROW_DICE:
+            n = Dice_Node(player, self)
+        else:
+            n = Node(player, self, move)
+        self.childNodes.append(n)
+        self.child_moves.append(move)
+        return n
 
     def ChildrenToString(self):
         s = ""
@@ -64,82 +64,100 @@ class Node:
              s += str(c) + "\n"
         return s
 
-class DiceNode(Node):
-    def __init__(self, move = None, parent = None, state = None):
-        self.move = move # the move that got us to this node - "None" for the root node
-        self.parentNode = parent # "None" for the root node
-        self.childNodes = []
-        self.wins = 0
-        self.visits = 0
-        self.untriedMoves = [] # future child nodes
-        self.player_turn = state.player_turn # the only part of the state that the Node needs later
+    def __repr__(self):
+        return "[M:" + str(self.move) + " W/V:" + str(self.wins) + "/" + str(self.visits) + "]"
 
-        if self.move == (3,):
-            for i in range(2, 13):
-                self.AddChild((config.THROW_DICE, i), state)
+class Dice_Node(Node):
+    def __init__(self, player, parent = None):
+        Node.__init__(self, player, parent, (config.THROW_DICE,))
+        self.possible_moves = [(config.THROW_DICE, x) for x in range(2, 13)]
+        self.is_random = True
+        
+    def get_possible_moves(self, state):
+        return self.possible_moves
 
     def calculate_throw_dice(self):
         dice_1 = random.choice([1, 2, 3, 4, 5, 6])
         dice_2 = random.choice([1, 2, 3, 4, 5, 6])
 
-        result = dice_1 + dice_2
-        self.execute_dice_result(result)
-        
-    def UCTSelectChild(self):
-        """ Use the UCB1 formula to select a child node. Often a constant UCTK is applied so we have
-            lambda c: c.wins/c.visits + UCTK * sqrt(2*log(self.visits)/c.visits to vary the amount of
-            exploration versus exploitation.
-        """
+        return (dice_1 + dice_2)
+    
+    def roll(self):
         dice_result = self.calculate_throw_dice()
-        for s in self.childNodes:
-            if s.move == (config.THROW_DICE, dice_result):
-                return s
-
-        raise Exception("Node not found")
-
+        
+        if ((config.THROW_DICE, dice_result) in self.child_moves):
+            idx = self.child_moves.index((config.THROW_DICE, dice_result))
+            return self.childNodes[idx]
+        else:
+            node = self.add_child((config.THROW_DICE, dice_result))
+            return node
+            
+    def add_child(self, move):
+        node = Node(self.current_player, self, move)
+        self.childNodes.append(node)
+        self.child_moves.append(move)
+        return node
 
 class MCTS_AI:
     def __init__(self, itermax):
         self.itermax = itermax
-
-    def move(self, rootstate, verbose = False):
-        rootnode = Node(state = rootstate)
-
+        
+    def select(self, state, node):
+        while 1:
+            if node.is_random:
+                node = node.roll()
+                state.ai_do_move(node.move)
+            else:
+                expansion_nodes = node.check_untried(state)
+                if expansion_nodes != [] or (expansion_nodes == [] and node.childNodes == []):
+                    return node, expansion_nodes
+                else:
+                    node = node.UCTSelectChild()
+                    if node.move[0] != config.THROW_DICE:
+                        state.ai_do_move(node.move)
+                    
+    def expand(self, state, node, possible_expansions):    
+        m = random.choice(possible_expansions) 
+        current_player = state.player_turn
+        if m[0] != config.THROW_DICE:
+            state.ai_do_move(m)
+        node = node.add_child(current_player, m) # add child and descend tree
+        
+        return node
+    
+    def move(self, rootstate):
+        rootnode = Node(rootstate.player_turn)
+        
+        if len(rootnode.get_possible_moves(rootstate)) == 1:
+            return rootnode.possible_moves[0]
+        
         for i in range(self.itermax):
+            # TODO: Determinization in the future
+            
             node = rootnode
             state = deepcopy(rootstate)
-
+            
             # Select
-            while node.untriedMoves == [] and node.childNodes != []: # node is fully expanded and non-terminal
-                node = node.UCTSelectChild()
-                state.ai_do_move(node.move)
-
+            node, expansion_nodes = self.select(state, node)
+            
             # Expand
-            if node.untriedMoves != []: # if we can expand (i.e. state/node is non-terminal)
-                m = random.choice(node.untriedMoves) 
-                state.ai_do_move(m)
-                node = node.AddChild(m,state) # add child and descend tree
-
-            # Rollout - this can often be made orders of magnitude quicker using a state.GetRandomMove() function
+            if expansion_nodes != []: # Otherwise this is a terminal Node
+                node = self.expand(state, node, expansion_nodes)
+                
+            # Rollout
             moves = state.ai_get_moves()
             m = 0
-            while moves != []: # while state is non-terminal
+            while moves != [] and m < 3000: # while state is non-terminal
                 state.ai_do_move(random.choice(moves))
                 moves = state.ai_get_moves()
                 m += 1
 
-            #with open('train_set\\' + str(state.uuid) + '_' + str(i), 'wb') as output:
-            #    pickle.dump(state, output, -1)
-
             # Backpropagate
             while node != None: # backpropagate from the expanded node and work back to the root node
-                node.Update(state.ai_get_result(node.player_turn)) # state is terminal. Update node with result from POV of node.playerJustMoved
+                node.update(state.ai_get_result(node.current_player)) # state is terminal. Update node with result from POV of node.playerJustMoved
                 node = node.parentNode
-
-        # Output some information about the tree - can be omitted
-        if (verbose): 
-            print (rootnode.TreeToString(0))
-        else: 
-            print (rootnode.ChildrenToString())
-
-        return sorted(rootnode.childNodes, key = lambda c: c.visits)[-1].move # return the move that was most visited
+                
+        print (rootstate.player_turn)
+        print (rootnode.ChildrenToString())
+        
+        return sorted(rootnode.childNodes, key = lambda c: c.visits)[-1].move

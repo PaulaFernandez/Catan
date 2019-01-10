@@ -33,7 +33,7 @@ class GameState:
             self.players.append(player.Player(i, config.player_is_human[i]))
 
             if config.player_is_human[i] == 0:
-                self.players[i].ai = MCTS_AI(1)
+                self.players[i].ai = MCTS_AI(350)
 
         self.max_road = {0: 1, 1: 1, 2: 1, 3: 1}
         
@@ -657,6 +657,8 @@ class GameState:
         elif move[0] == config.THROW_DICE:
             if len(move) == 1:
                 self.calculate_throw_dice()
+            else:
+                self.execute_dice_result(move[1])
         elif move[0] == config.CONTINUE_GAME:
             self.continue_game()
         elif move[0] == config.TRADE_41:
@@ -677,4 +679,4 @@ class GameState:
             else:
                 return 0
         else:
-            raise Exception("AI checking result when game has not finished")
+            return 0
