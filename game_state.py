@@ -24,6 +24,9 @@ class GameState:
         self.resources_in_year_of_plenty = 0
         self.special_card_played_in_turn = 0
         self.winner = None
+        self.ai_rollout = 0
+        self.special_cards_played = []
+        self.dice_thrown = 0
 
         # Robber initial position
         self.robber_tile = self.tiles.index(config.DESERT)
@@ -33,7 +36,7 @@ class GameState:
             self.players.append(player.Player(i, config.player_is_human[i]))
 
             if config.player_is_human[i] == 0:
-                self.players[i].ai = MCTS_AI(350)
+                self.players[i].ai = MCTS_AI(i, 1600)
 
         self.max_road = {0: 1, 1: 1, 2: 1, 3: 1}
         
@@ -87,6 +90,54 @@ class GameState:
             special_cards.extend([key] * value['count'])
         shuffle(special_cards)
         return special_cards
+    
+    def add_resources_ai(self, cards, player_id):
+        if self.ai_rollout == 0:
+            for p in range(4):
+                if p != player_id and self.players[p].ai != None:
+                    self.players[p].ai.add_resources_rival(cards, player_id)
+
+    def remove_resources_ai(self, cards, player_id):
+        if self.ai_rollout == 0:
+            for p in range(4):
+                if p != player_id and self.players[p].ai != None:
+                    self.players[p].ai.remove_resources_rival(cards, player_id)
+
+    def remove_unknown_resource_ai(self, player_id):
+        if self.ai_rollout == 0:
+            for p in range(4):
+                if p != player_id and self.players[p].ai != None:
+                    self.players[p].ai.remove_unknown_resource_rival(player_id)
+
+    def add_unknown_resource_ai(self, player_id):
+        if self.ai_rollout == 0:
+            for p in range(4):
+                if p != player_id and self.players[p].ai != None:
+                    self.players[p].ai.add_unknown_resource_rival(player_id)
+
+    def stolen_resources_ai(self, player_id_get_card, player_id_give_card, cards):
+        if self.ai_rollout == 0:
+            for p in range(4):
+                if p == player_id_get_card and self.players[p].ai != None:
+                    self.players[p].ai.remove_resources_rival(cards, player_id_give_card)
+                elif p == player_id_give_card and self.players[p].ai != None:
+                    self.players[p].ai.add_resources_rival(cards, player_id_get_card)
+                elif self.players[p].ai != None:
+                    self.players[p].ai.add_unknown_resource_rival(player_id_get_card)
+                    self.players[p].ai.remove_unknown_resource_rival(player_id_give_card)
+
+    def add_special_card_ai(self, player_id):
+        if self.ai_rollout == 0:
+            for p in range(4):
+                if p != player_id and self.players[p].ai != None:
+                    self.players[p].ai.add_special_card_rival(player_id)
+
+    def remove_special_card_ai(self, player_id):
+        if self.ai_rollout == 0:
+            for p in range(4):
+                if p != player_id and self.players[p].ai != None:
+                    self.players[p].ai.remove_special_card_rival(player_id)
+
 
     def generate_numbers(self):
         numbers = config.roll_numbers
@@ -110,6 +161,7 @@ class GameState:
         if self.initial_phase_decrease == 1:
             if self.player_turn == self.initial_phase_start_player:
                 self.game_phase = config.PHASE_THROW_DICE
+                self.dice_thrown = 0
                 self.log = "Player " + str(self.player_turn + 1) + ": throw dice"
                 return
 
@@ -158,6 +210,7 @@ class GameState:
         for player_id, resources in resources_to_distribute:
             if distribute_resource[list(resources)[0]]:
                 self.players[player_id].add_resources(resources)
+                self.add_resources_ai(resources, player_id)
 
     def calculate_throw_dice(self):
         dice_1 = choice([1, 2, 3, 4, 5, 6])
@@ -170,6 +223,7 @@ class GameState:
     def execute_dice_result(self, result):
         self.log = "Dice result = " + str(result)
         self.dice_resources(result)
+        self.dice_thrown = 1
 
         if result == 7:
             self.game_phase = config.PHASE_DISCARD
@@ -192,6 +246,7 @@ class GameState:
             if vertex in vertices:
                 if self.tiles[tile] in self.players[self.player_turn].cards:
                     self.players[self.player_turn].cards[self.tiles[tile]] += 1
+                    self.add_resources_ai({self.tiles[tile]: 1}, self.player_turn)
 
     def valid_settlement(self, vertex):
         def settlement_clash(vertex_1, vertex_2):
@@ -367,13 +422,15 @@ class GameState:
                 self.game_phase = config.PHASE_INITIAL_ROAD
                 self.players[self.player_turn].settlements.append(vertex_released)
                 self.initial_phase_settlement = vertex_released
-                self.initial_settlement_resources(vertex_released)
+                if self.initial_phase_decrease == 1:
+                    self.initial_settlement_resources(vertex_released)
                 self.log = "Player " + str(self.player_turn + 1) + ": place road"
 
             elif self.game_phase == config.PHASE_WAIT and self.players[self.player_turn].available_resources('settlement'):
                 self.players[self.player_turn].remove_resources_by_improvement('settlement')
                 self.players[self.player_turn].settlements.append(vertex_released)
                 #self.calculate_longest_road()
+                self.remove_resources_ai(config.resources['settlement'], self.player_turn)
 
         self.current_action = -1
 
@@ -382,6 +439,7 @@ class GameState:
             self.players[self.player_turn].settlements.remove(vertex_released)
             self.players[self.player_turn].cities.append(vertex_released)
             self.players[self.player_turn].remove_resources_by_improvement('city')
+            self.remove_resources_ai(config.resources['city'], self.player_turn)
 
         self.current_action = -1
 
@@ -399,16 +457,22 @@ class GameState:
             if road_released in self.valid_roads() and self.players[self.player_turn].available_resources('road'):
                 self.players[self.player_turn].roads.append(road_released)
                 self.players[self.player_turn].remove_resources_by_improvement('road')
-                self.calculate_longest_road(self.player_turn)
+                self.remove_resources_ai(config.resources['road'], self.player_turn)
+                if len(self.players[self.player_turn].roads) >= 5:
+                    self.calculate_longest_road(self.player_turn)
 
         elif self.game_phase == config.PHASE_ROAD_BUILDING:
             if road_released in self.valid_roads():
                 self.players[self.player_turn].roads.append(road_released)
-                self.calculate_longest_road(self.player_turn)
+                if len(self.players[self.player_turn].roads) >= 5:
+                    self.calculate_longest_road(self.player_turn)
                 self.roads_in_road_building -= 1
                 if self.roads_in_road_building == 0:
                     self.players[self.player_turn].use_special_card(config.ROAD_BUILDING)
+                    self.special_cards_played.append(config.ROAD_BUILDING)
+                    self.remove_special_card_ai(self.player_turn)
                     self.special_card_played_in_turn = 1
+
                     self.game_phase = config.PHASE_WAIT
                     self.log = "Choose action"
 
@@ -419,6 +483,7 @@ class GameState:
 
         if self.players[player_discarding_id].cards[card] > 0:
             self.players[player_discarding_id].cards[card] -= 1
+            self.remove_unknown_resource_ai(player_discarding_id)
 
             if self.players_to_discard[0][1] <= 1:
                 self.players_to_discard.pop(0)
@@ -509,7 +574,11 @@ class GameState:
                 self.log = "Player " + str(self.player_turn + 1) + ": choose house to steal from"
 
             else:
-                self.game_phase = config.PHASE_WAIT
+                if self.dice_thrown == 1:
+                    self.game_phase = config.PHASE_WAIT
+                else:
+                    self.game_phase = config.PHASE_THROW_DICE
+                    self.log = "Throw Dice"
 
     def handle_steal_from(self, vertex):
         for vertex_from, player_id in self.houses_to_steal_from:
@@ -519,6 +588,27 @@ class GameState:
                     card_stolen = choice(cards_list)
                     self.players[self.player_turn].add_resources({card_stolen: 1})
                     self.players[player_id].remove_resources({card_stolen: 1})
+                    self.stolen_resources_ai(self.player_turn, player_id, {card_stolen: 1})
+
+                if self.dice_thrown == 1:
+                    self.game_phase = config.PHASE_WAIT
+                    self.log = "Choose action"
+                else:
+                    self.game_phase = config.PHASE_THROW_DICE
+                    self.log = "Throw Dice"
+                return
+
+    def handle_steal_given_card_from(self, vertex, card_type):
+        if card_type == 0:
+            self.game_phase = config.PHASE_WAIT
+            self.log = "Choose action"
+
+            return
+        for vertex_from, player_id in self.houses_to_steal_from:
+            if vertex_from == vertex:
+                card_stolen = card_type
+                self.players[self.player_turn].add_resources({card_stolen: 1})
+                self.players[player_id].remove_resources({card_stolen: 1})
 
                 self.game_phase = config.PHASE_WAIT
                 self.log = "Choose action"
@@ -531,6 +621,8 @@ class GameState:
             resources_in_play = self.total_resources_in_play()
             if resources_in_play[resource_clicked] < config.max_resources:
                 self.players[self.player_turn].execute_trade()
+                self.add_resources_ai(self.players[self.player_turn].current_trade['resource_received'], self.player_turn)
+                self.remove_resources_ai(self.players[self.player_turn].current_trade['resource_offered'], self.player_turn)
             self.players[self.player_turn].initialize_trade()
 
             self.game_phase = config.PHASE_WAIT
@@ -551,6 +643,8 @@ class GameState:
             resources_in_play = self.total_resources_in_play()
             if resources_in_play[resource_clicked] < config.max_resources:
                 self.players[self.player_turn].execute_trade()
+                self.add_resources_ai(self.players[self.player_turn].current_trade['resource_received'], self.player_turn)
+                self.remove_resources_ai(self.players[self.player_turn].current_trade['resource_offered'], self.player_turn)
             self.players[self.player_turn].initialize_trade()
 
             self.game_phase = config.PHASE_WAIT
@@ -560,23 +654,37 @@ class GameState:
         if self.players[self.player_turn].available_resources('special_card'):
             if len(self.special_cards) > 0:
                 self.players[self.player_turn].remove_resources_by_improvement('special_card')
+                self.remove_resources_ai(config.resources['special_card'], self.player_turn)
+                self.add_special_card_ai(self.player_turn)
                 self.players[self.player_turn].special_cards.append(self.special_cards.pop())
+
+    def handle_buy_given_special_card(self, card):
+        self.players[self.player_turn].remove_resources_by_improvement('special_card')
+        self.players[self.player_turn].special_cards.append(card)
+        self.special_cards.remove(card)
 
     def handle_play_knight(self):
         self.players[self.player_turn].use_special_card(config.KNIGHT)
+        self.special_cards_played.append(config.KNIGHT)
         if self.players[self.player_turn].used_knights >= 3:
             self.check_largest_army_badge()
 
+        self.remove_special_card_ai(self.player_turn)
         self.special_card_played_in_turn = 1
         self.game_phase = config.PHASE_MOVE_ROBBER
         self.log = "Player " + str(self.player_turn + 1) + ": move robber"
 
     def handle_play_monopoly(self, resource):
         self.players[self.player_turn].use_special_card(config.MONOPOLY)
+        self.special_cards_played.append(config.MONOPOLY)
         number = 0
         for player_x in self.players:
-            number += player_x.remove_all_resources(resource)
+            given_cards = player_x.remove_all_resources(resource)
+            self.remove_resources_ai({resource: given_cards}, player_x.player_id)
+            self.add_resources_ai({resource: given_cards}, self.player_turn)
+            number += given_cards
 
+        self.remove_special_card_ai(self.player_turn)
         self.players[self.player_turn].add_resources({resource: number})
         self.special_card_played_in_turn = 1
         self.game_phase = config.PHASE_WAIT
@@ -584,20 +692,37 @@ class GameState:
 
     def handle_play_year_of_plenty(self, resource):
         resources_in_play = self.total_resources_in_play()
+
         if resources_in_play[resource] < config.max_resources:
             self.players[self.player_turn].add_resources({resource: 1})
+            self.add_resources_ai({resource: 1}, self.player_turn)
             self.resources_in_year_of_plenty -= 1
+
             if self.resources_in_year_of_plenty == 0:
                 self.players[self.player_turn].use_special_card(config.YEAR_OF_PLENTY)
+                self.special_cards_played.append(config.YEAR_OF_PLENTY)
+                self.remove_special_card_ai(self.player_turn)
                 self.special_card_played_in_turn = 1
                 self.game_phase = config.PHASE_WAIT
                 self.log = "Choose action"
 
     def continue_game(self):
         self.game_phase = config.PHASE_THROW_DICE
+        self.dice_thrown = 0
         self.special_card_played_in_turn = 0
         self.next_player()
+
+        if self.ai_rollout == 0:
+            for p in range(4):
+                print("Player " + str(p) + ": " + str(self.players[p].points(hidden=0)) + " points")
+
         return self.check_end_game()
+    
+    def get_player_moving(self):
+        if self.game_phase == config.PHASE_DISCARD and len(self.players_to_discard) > 0:
+            return self.players_to_discard[0][0]
+        else:
+            return self.player_turn
     
     def ai_get_moves(self):
         moves = []
@@ -611,6 +736,10 @@ class GameState:
                 moves.append((config.BUILD_ROAD, r))
         elif self.game_phase == config.PHASE_THROW_DICE:
             moves.append((config.THROW_DICE,))
+            # Play Knight
+            for card in set(self.players[self.player_turn].special_cards):
+                if card == config.KNIGHT and self.special_card_played_in_turn == 0:
+                    moves.append((config.PLAY_SPECIAL_CARD, config.KNIGHT))
         elif self.game_phase == config.PHASE_WAIT:
             # Settlements
             if self.players[self.player_turn].available_resources('settlement'):
@@ -631,11 +760,41 @@ class GameState:
                     for key2 in config.card_types:
                         if key != key2:
                             moves.append((config.TRADE_41, (key, key2)))
+            # Port Trades
+            for p in range(9):
+                if self.port_belongs_to_player(p):
+                    if self.ports[p] == config.GENERIC:
+                        for key in config.card_types:
+                            if self.players[self.player_turn].available_cards({key: 3}):
+                                for key2 in config.card_types:
+                                    if key != key2:
+                                        moves.append((config.PORT_TRADE, (p, key, key2)))
+                    else:
+                        if self.players[self.player_turn].available_cards({self.ports[p]: 2}):
+                            for key2 in config.card_types:
+                                if self.ports[p] != key2:
+                                    moves.append((config.PORT_TRADE, (p, self.ports[p], key2)))
+            # Buy Special Card
+            if len(self.special_cards) > 0:
+                if self.players[self.player_turn].available_resources('special_card'):
+                    moves.append((config.BUY_SPECIAL_CARD,))
+            # Play Special Cards
+            for card in set(self.players[self.player_turn].special_cards):
+                if card == config.KNIGHT and self.special_card_played_in_turn == 0:
+                    moves.append((config.PLAY_SPECIAL_CARD, config.KNIGHT))
+                if card == config.MONOPOLY and self.special_card_played_in_turn == 0:
+                    for key in config.card_types:
+                        moves.append((config.PLAY_SPECIAL_CARD, config.MONOPOLY, key))
+                if card == config.ROAD_BUILDING and self.special_card_played_in_turn == 0:
+                    moves.append((config.PLAY_SPECIAL_CARD, config.ROAD_BUILDING))
+                if card == config.YEAR_OF_PLENTY and self.special_card_played_in_turn == 0:
+                    moves.append((config.PLAY_SPECIAL_CARD, config.YEAR_OF_PLENTY))
             # End Turn
             moves.append((config.CONTINUE_GAME,))
         elif self.game_phase == config.PHASE_MOVE_ROBBER:
             for key in config.tiles_vertex:
-                moves.append((config.MOVE_ROBBER, key))
+                if key != self.robber_tile:
+                    moves.append((config.MOVE_ROBBER, key))
         elif self.game_phase == config.PHASE_STEAL_CARD:
             self.compute_houses_to_steal_from(self.robber_tile)
             for h in self.houses_to_steal_from:
@@ -644,6 +803,12 @@ class GameState:
             for key in config.card_types:
                 if self.players[self.players_to_discard[0][0]].available_cards({key: 1}):
                     moves.append((config.DISCARD, key))
+        elif self.game_phase == config.PHASE_ROAD_BUILDING:
+            for r in self.valid_roads():
+                moves.append((config.BUILD_ROAD, r))
+        elif self.game_phase == config.PHASE_YEAR_OF_PLENTY:
+            for key in config.card_types:
+                moves.append((config.RESOURCE_YEAR_PLENTY, key))
 
         return moves
 
@@ -665,18 +830,48 @@ class GameState:
             self.start_4_1_trade()
             self.handle_trade(move[1][0])
             self.handle_trade(move[1][1])
+        elif move[0] == config.PORT_TRADE:
+            self.start_port_trade(move[1][0])
+            if self.ports[move[1][0]] == config.GENERIC:
+                self.handle_trade(move[1][1])
+                self.handle_trade(move[1][2])
+            else:
+                self.handle_trade(move[1][2])
         elif move[0] == config.MOVE_ROBBER:
             self.handle_move_robber(move[1])
         elif move[0] == config.STEAL_FROM_HOUSE:
-            self.handle_steal_from(move[1][0])
+            if len(move) == 2:
+                self.handle_steal_from(move[1][0])
+            else:
+                self.handle_steal_given_card_from(move[1][0], move[2])
         elif move[0] == config.DISCARD:
             self.handle_discard(move[1])
+        elif move[0] == config.BUY_SPECIAL_CARD:
+            if len(move) == 1:
+                self.handle_buy_special_card()
+            else:
+                self.handle_buy_given_special_card(move[1])
+        elif move[0] == config.PLAY_SPECIAL_CARD:
+            if move[1] == config.KNIGHT:
+                self.handle_play_knight()
+            if move[1] == config.MONOPOLY:
+                self.handle_play_monopoly(move[2])
+            if move[1] == config.ROAD_BUILDING:
+                self.game_phase = config.PHASE_ROAD_BUILDING
+                self.log = "Build roads"
+                self.roads_in_road_building = 2
+            if move[1] == config.YEAR_OF_PLENTY:
+                self.game_phase = config.PHASE_YEAR_OF_PLENTY
+                self.log = "Choose resources"
+                self.resources_in_year_of_plenty = 2
+        elif move[0] == config.RESOURCE_YEAR_PLENTY:
+            self.handle_play_year_of_plenty(move[1])
 
     def ai_get_result(self, player):
         if self.game_phase == config.PHASE_END_GAME:
             if self.winner == player:
-                return 1
+                return 1.0
             else:
-                return 0
+                return (float(self.players[player].points(hidden = 1)) - 2) / 10.0 - 1.0
         else:
-            return 0
+            return (float(self.players[player].points(hidden = 1)) - 2) / 10.0 - 1.0

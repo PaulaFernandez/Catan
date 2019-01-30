@@ -8,4 +8,4 @@ def play_game():
         move = game.players[game.player_turn].ai.move(game)
         game.ai_do_move(move)
 
-#play_game()
+play_game()

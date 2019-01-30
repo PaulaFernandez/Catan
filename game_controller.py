@@ -81,10 +81,12 @@ class GameController:
             self.redraw()
             return
 
-        if self.game.players[self.game.player_turn].is_human == 0:
+        if self.game.players[self.game.get_player_moving()].is_human == 0:
             if self.check_click(pos) == ('action', config.CONTINUE_GAME):
-                move = self.game.players[self.game.player_turn].ai.move(self.game)
+                self.game.dices = (0, 0)
+                move = self.game.players[self.game.get_player_moving()].ai.move(self.game)
                 self.game.ai_do_move(move)
+                self.redraw()
             return
 
         if self.game.game_phase == config.PHASE_INITIAL_SETTLEMENT:
@@ -97,6 +99,8 @@ class GameController:
             if self.check_click(pos) == ('action', config.THROW_DICE):
                 self.game.current_action = config.THROW_DICE
                 self.game.calculate_throw_dice()
+            elif self.check_click(pos) == ('special_card', config.KNIGHT):
+                self.game.handle_play_knight()
         elif self.game.game_phase == config.PHASE_WAIT:
             click_port = self.click_in_port(pos)
             if self.check_click(pos) == ('action', config.CONTINUE_GAME):

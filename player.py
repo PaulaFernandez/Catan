@@ -1,4 +1,5 @@
 import config
+from copy import deepcopy
 
 class Player():
     def __init__(self, player_id, is_human):
@@ -21,6 +22,15 @@ class Player():
         self.current_trade = {}
         self.initialize_trade()
 
+    def __deepcopy__(self, memo):
+        cls = self.__class__
+        result = cls.__new__(cls)
+        memo[id(self)] = result
+        for k, v in self.__dict__.items():
+            if k != "ai":
+                setattr(result, k, deepcopy(v, memo))
+        return result
+    
     def initialize_trade(self):
         self.current_trade = {'type': -1,
                               'against_player': -1,

@@ -1,11 +1,26 @@
 import math
 
-player_is_human = {0: 1,
+player_is_human = {0: 0,
                    1: 0,
                    2: 0,
                    3: 0}
 
 main_color = (255, 255, 255)
+
+# Neural Network
+MOMENTUM = 0.9
+REG_CONST = 0.0001
+LEARNING_RATE = 0.1
+INPUT_DIM = (70, 6, 11)
+OUTPUT_DIM = 400
+HIDDEN_CNN_LAYERS = [
+	{'filters':75, 'kernel_size': (3,3)}
+	 , {'filters':75, 'kernel_size': (3,3)}
+	 , {'filters':75, 'kernel_size': (3,3)}
+	 , {'filters':75, 'kernel_size': (3,3)}
+	 , {'filters':75, 'kernel_size': (3,3)}
+	 , {'filters':75, 'kernel_size': (3,3)}
+	]
 
 # Resources
 WATER = 0
@@ -57,6 +72,11 @@ special_cards = {VICTORY_POINT: {'img': 'img/victory_point.png', 'count': 5},
                  ROAD_BUILDING: {'img': 'img/road_building.png', 'count': 2},
                  YEAR_OF_PLENTY: {'img': 'img/year_of_plenty.png', 'count': 2}}
 
+special_cards_vector = []
+
+for key, value in special_cards.items():
+    special_cards_vector.extend([key] * value['count'])
+
 # Actions
 BUILD_SETTLEMENT = 0
 BUILD_CITY = 1
@@ -67,6 +87,9 @@ BUY_SPECIAL_CARD = 5
 MOVE_ROBBER = 6
 STEAL_FROM_HOUSE = 7
 DISCARD = 8
+PLAY_SPECIAL_CARD = 9
+PORT_TRADE = 10
+RESOURCE_YEAR_PLENTY = 11
 SAVE_GAME = 100
 LOAD_GAME = 101
 CONTINUE_GAME = 102
@@ -154,6 +177,14 @@ tiles_vertex = {5: [0, 1, 2, 10, 9, 8],
                 29: [39, 40, 41, 49, 48, 47],
                 30: [41, 42, 43, 51, 50, 49],
                 31: [43, 44, 45, 53, 52, 51]}
+
+# Vertex to nn input
+vertex_to_nn_input = [(0, 2), (0, 3), (0, 4), (0, 5), (0, 6), (0, 7), (0, 8),
+                      (1, 1), (1, 2), (1, 3), (1, 4), (1, 5), (1, 6), (1, 7), (1, 8), (1, 9),
+                      (2, 0), (2, 1), (2, 2), (2, 3), (2, 4), (2, 5), (2, 6), (2, 7), (2, 8), (2, 9), (2, 10),
+                      (3, 0), (3, 1), (3, 2), (3, 3), (3, 4), (3, 5), (3, 6), (3, 7), (3, 8), (3, 9), (3, 10),
+                      (4, 1), (4, 2), (4, 3), (4, 4), (4, 5), (4, 6), (4, 7), (4, 8), (4, 9),
+                      (5, 2), (5, 3), (5, 4), (5, 5), (5, 6), (5, 7), (5, 8)]
 
 # Tiles dimensions
 total_offset = 5
@@ -294,3 +325,32 @@ big_dice_x1 = 350
 big_dice_x2 = 650
 big_dice_y = 400
 big_dice_size = (299, 294)
+
+# Moves mapping
+available_moves = []
+for s in range(54):
+    available_moves.append((BUILD_SETTLEMENT, s))
+    available_moves.append((BUILD_CITY, s))
+for s in range(54):
+    for r in roads_from_settlement[s]:
+        if r[0] < r[1]:
+            available_moves.append((BUILD_ROAD, r))
+available_moves.append((THROW_DICE, ))
+available_moves.append((CONTINUE_GAME, ))
+for i in [SHEEP, ORE, WHEAT, BRICK, WOOD]:
+    for j in [SHEEP, ORE, WHEAT, BRICK, WOOD]:
+        if i != j:
+            available_moves.append((TRADE_41, (i, j)))
+for i in [GENERIC, SHEEP, ORE, WHEAT, BRICK, WOOD]:
+    if i == GENERIC:
+        for j in [SHEEP, ORE, WHEAT, BRICK, WOOD]:
+            for k in [SHEEP, ORE, WHEAT, BRICK, WOOD]:
+                if j != k:
+                    available_moves.append((PORT_TRADE, (i, j, k)))
+    else:
+        for j in [SHEEP, ORE, WHEAT, BRICK, WOOD]:
+            available_moves.append((PORT_TRADE, (i, i, j)))
+for key in tiles_vertex:
+    available_moves.append((MOVE_ROBBER, key))
+
+a = 0
