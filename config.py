@@ -12,14 +12,14 @@ MOMENTUM = 0.9
 REG_CONST = 0.0001
 LEARNING_RATE = 0.1
 INPUT_DIM = (70, 6, 11)
-OUTPUT_DIM = 400
+OUTPUT_DIM = 699
 HIDDEN_CNN_LAYERS = [
-	{'filters':75, 'kernel_size': (3,3)}
-	 , {'filters':75, 'kernel_size': (3,3)}
-	 , {'filters':75, 'kernel_size': (3,3)}
-	 , {'filters':75, 'kernel_size': (3,3)}
-	 , {'filters':75, 'kernel_size': (3,3)}
-	 , {'filters':75, 'kernel_size': (3,3)}
+	{'filters':128, 'kernel_size': (3,3)}
+	 , {'filters':128, 'kernel_size': (3,3)}
+	 , {'filters':128, 'kernel_size': (3,3)}
+	 , {'filters':128, 'kernel_size': (3,3)}
+	 , {'filters':128, 'kernel_size': (3,3)}
+	 , {'filters':128, 'kernel_size': (3,3)}
 	]
 
 # Resources
@@ -341,16 +341,23 @@ for i in [SHEEP, ORE, WHEAT, BRICK, WOOD]:
     for j in [SHEEP, ORE, WHEAT, BRICK, WOOD]:
         if i != j:
             available_moves.append((TRADE_41, (i, j)))
-for i in [GENERIC, SHEEP, ORE, WHEAT, BRICK, WOOD]:
-    if i == GENERIC:
-        for j in [SHEEP, ORE, WHEAT, BRICK, WOOD]:
-            for k in [SHEEP, ORE, WHEAT, BRICK, WOOD]:
-                if j != k:
-                    available_moves.append((PORT_TRADE, (i, j, k)))
-    else:
-        for j in [SHEEP, ORE, WHEAT, BRICK, WOOD]:
-            available_moves.append((PORT_TRADE, (i, i, j)))
+for i in range(9):
+    for j in [SHEEP, ORE, WHEAT, BRICK, WOOD]:
+        for k in [SHEEP, ORE, WHEAT, BRICK, WOOD]:
+            available_moves.append((PORT_TRADE, (i, j, k)))
 for key in tiles_vertex:
     available_moves.append((MOVE_ROBBER, key))
-
-a = 0
+for s in range(54):
+    for p in range(1, 4):
+        available_moves.append((STEAL_FROM_HOUSE, (s, p)))
+for i in [SHEEP, ORE, WHEAT, BRICK, WOOD]:
+    available_moves.append((DISCARD, i))
+available_moves.append((BUY_SPECIAL_CARD, ))
+for i in [KNIGHT, MONOPOLY, ROAD_BUILDING, YEAR_OF_PLENTY]:
+    if i == MONOPOLY:
+        for j in [SHEEP, ORE, WHEAT, BRICK, WOOD]:
+            available_moves.append((PLAY_SPECIAL_CARD, i, j))
+    else:
+        available_moves.append((PLAY_SPECIAL_CARD, i))
+for i in [SHEEP, ORE, WHEAT, BRICK, WOOD]:
+    available_moves.append((RESOURCE_YEAR_PLENTY, i))

@@ -36,7 +36,7 @@ class GameState:
             self.players.append(player.Player(i, config.player_is_human[i]))
 
             if config.player_is_human[i] == 0:
-                self.players[i].ai = MCTS_AI(i, 1600)
+                self.players[i].ai = MCTS_AI(i, 240)
 
         self.max_road = {0: 1, 1: 1, 2: 1, 3: 1}
         
@@ -489,6 +489,8 @@ class GameState:
                 self.players_to_discard.pop(0)
             else:
                 self.players_to_discard[0] = (player_discarding_id, self.players_to_discard[0][1] - 1)
+        else:
+            pass
 
         if len(self.players_to_discard) > 0:
             self.log = "Player " + str(self.players_to_discard[0][0] + 1) + ": discard " + str(self.players_to_discard[0][1]) + " cards"

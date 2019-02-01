@@ -63,7 +63,7 @@ class Residual_CNN(Gen_Model):
 
         x = BatchNormalization(axis=1)(x)
         x = add([input_block, x])
-        x = ReLU()(x)
+        x = LeakyReLU()(x)
 
         return (x)
 
@@ -79,7 +79,7 @@ class Residual_CNN(Gen_Model):
         )(x)
 
         x = BatchNormalization(axis=1)(x)
-        x = ReLU()(x)
+        x = LeakyReLU()(x)
 
         return (x)
 
@@ -96,7 +96,7 @@ class Residual_CNN(Gen_Model):
 
 
         x = BatchNormalization(axis=1)(x)
-        x = ReLU()(x)
+        x = LeakyReLU()(x)
         x = Flatten()(x)
 
         x = Dense(
@@ -106,7 +106,7 @@ class Residual_CNN(Gen_Model):
             , kernel_regularizer=regularizers.l2(self.reg_const)
             )(x)
 
-        x = ReLU()(x)
+        x = LeakyReLU()(x)
 
         x = Dense(
             4
@@ -130,13 +130,13 @@ class Residual_CNN(Gen_Model):
         )(x)
 
         x = BatchNormalization(axis=1)(x)
-        x = ReLU()(x)
+        x = LeakyReLU()(x)
         x = Flatten()(x)
 
         x = Dense(
             self.output_dim
             , use_bias=False
-            , activation='linear'
+            , activation='sigmoid'
             , kernel_regularizer=regularizers.l2(self.reg_const)
             , name = 'policy_head'
             )(x)

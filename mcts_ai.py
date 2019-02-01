@@ -1,6 +1,6 @@
 from math import sqrt, log
 from copy import deepcopy
-from random import shuffle, choice
+from random import shuffle, choice, sample
 import config
 import pickle
 import numpy as np
@@ -11,7 +11,7 @@ class Node:
     """ A node in the game tree. Note wins is always from the viewpoint of player_turn.
         Crashes if state not specified.
     """
-    def __init__(self, player, parent = None, move = None):
+    def __init__(self, player, parent = None, move = None, prior_probs = 0.0):
         self.current_player = player
         self.parentNode = parent # "None" for the root node
         self.move = move
@@ -19,24 +19,29 @@ class Node:
         self.child_moves = []
         self.possible_moves = []
         self.is_random = False
-        self.wins = 0
-        self.visits = 0
-        self.available = 0
+        self.W = 0 # Total value of node
+        self.N = 0 # Total visits
+        self.Q = 0
+        self.move_probabilities = []
+        self.prior_probabilities = prior_probs
         
-    def UCTSelectChild(self, prob_moves):
+    def add_probabilities(self, probs):
+        self.move_probabilities = probs
+        
+    def UCTSelectChild(self):
         potential_moves = []
         
         for m in self.possible_moves:
             n = self.childNodes[self.child_moves.index(m)]
-            n.available += 1
             potential_moves.append(n)
         
-        s = sorted(potential_moves, key = lambda c: c.wins/c.visits + sqrt(2*log(c.available)/c.visits))[-1]
+        s = sorted(potential_moves, key = lambda c: c.Q + 0.1 * self.prior_probabilities * sqrt(self.N / (1 + c.N)))[-1]
         return s
     
     def update(self, result):
-        self.visits += 1
-        self.wins += result
+        self.N += 1
+        self.W += result
+        self.Q = self.W / self.N
         
     def get_possible_moves(self, state):
         self.possible_moves = state.ai_get_moves()
@@ -60,7 +65,11 @@ class Node:
         elif move[0] == config.STEAL_FROM_HOUSE:
             n = Steal_Card_Node(player, move, self)
         else:
-            n = Node(player, self, move)
+            index_probs = config.available_moves.index(move)
+            try:
+                n = Node(player, self, move, prior_probs = self.move_probabilities[index_probs])
+            except:
+                raise Exception("index: " + str(index_probs) + "move_probs: " + str(self.move_probabilities))
         self.childNodes.append(n)
         self.child_moves.append(move)
         return n
@@ -72,7 +81,7 @@ class Node:
         return s
 
     def __repr__(self):
-        return "[M:" + str(self.move) + " W/V:" + str(self.wins) + "/" + str(self.visits) + "]"
+        return "[M:" + str(self.move) + " Q/N:" + str(self.Q) + "/" + str(self.N) + "]"
 
 class Dice_Node(Node):
     def __init__(self, player, parent = None):
@@ -94,10 +103,10 @@ class Dice_Node(Node):
         
         if ((config.THROW_DICE, dice_result) in self.child_moves):
             idx = self.child_moves.index((config.THROW_DICE, dice_result))
-            return self.childNodes[idx]
+            return self.childNodes[idx], False
         else:
             node = self.add_child((config.THROW_DICE, dice_result))
-            return node
+            return node, True
             
     def add_child(self, move):
         node = Node(self.current_player, self, move)
@@ -123,10 +132,10 @@ class Steal_Card_Node(Node):
         
         if ((config.STEAL_FROM_HOUSE, self.move[1], card) in self.child_moves):
             idx = self.child_moves.index((config.STEAL_FROM_HOUSE, self.move[1], card))
-            return self.childNodes[idx]
+            return self.childNodes[idx], False
         else:
             node = self.add_child((config.STEAL_FROM_HOUSE, self.move[1], card))
-            return node
+            return node, True
             
     def add_child(self, move):
         node = Node(self.current_player, self, move)
@@ -152,10 +161,10 @@ class Buy_Card_Node(Node):
         
         if ((config.BUY_SPECIAL_CARD, card) in self.child_moves):
             idx = self.child_moves.index((config.BUY_SPECIAL_CARD, card))
-            return self.childNodes[idx]
+            return self.childNodes[idx], False
         else:
             node = self.add_child((config.BUY_SPECIAL_CARD, card))
-            return node
+            return node, True
             
     def add_child(self, move):
         node = Node(self.current_player, self, move)
@@ -230,33 +239,51 @@ class MCTS_AI:
     def remove_special_card_rival(self, player_id):
         self.rivals_info[player_id]['special_cards'] -= 1
     
-    def select(self, state, node, move_probs):
+    def select(self, state, node):
         while 1:
             if node.is_random:
-                node = node.roll(state)
+                node, evaluate = node.roll(state)
                 state.ai_do_move(node.move)
+
+                if evaluate == True:
+                    network = self.build_nn_input(state, determined = 1)
+                    prediction = self.nn.predict(network)
+                    
+                    node.add_probabilities(prediction[1][0])
             else:
                 expansion_nodes = node.check_untried(state)
                 if expansion_nodes != [] or (expansion_nodes == [] and node.childNodes == []):
                     return node, expansion_nodes
                 else:
-                    node = node.UCTSelectChild(move_probs)
+                    node = node.UCTSelectChild()
                     if node.move[0] != config.THROW_DICE and node.move[0] != config.BUY_SPECIAL_CARD and node.move[0] != config.STEAL_FROM_HOUSE:
                         state.ai_do_move(node.move)
                     
-    def expand(self, state, node, possible_expansions):    
+    def expand(self, state, node, possible_expansions):
         m = choice(possible_expansions) 
         current_player = state.get_player_moving()
         if m[0] != config.THROW_DICE and m[0] != config.BUY_SPECIAL_CARD and m[0] != config.STEAL_FROM_HOUSE:
             state.ai_do_move(m)
         node = node.add_child(current_player, m) # add child and descend tree
+
+        network = self.build_nn_input(state, determined = 1)
+        prediction = self.nn.predict(network)
+        
+        node.add_probabilities(prediction[1][0])
+
         if node.is_random:
-            node = node.roll(state)
+            node, evaluate = node.roll(state)
             state.ai_do_move(node.move)
 
-        return node
+            if evaluate == True:
+                network = self.build_nn_input(state, determined = 1)
+                prediction = self.nn.predict(network)
+                
+                node.add_probabilities(prediction[1][0])
 
-    def build_nn_input(self, state):
+        return node, prediction
+
+    def build_nn_input(self, state, determined = 0):
         nn_input = np.zeros((1, 70, 6, 11), dtype=np.float32)
 
         # Resources
@@ -286,8 +313,8 @@ class MCTS_AI:
             for c in state.players[p].cities:
                 nn_input[0, 23 + 3 * p_order, config.vertex_to_nn_input[c][0], config.vertex_to_nn_input[c][1]] = 1
             for r in state.players[p].roads:
-                nn_input[0, 24 + 3 * p_order, config.vertex_to_nn_input[r][0], config.vertex_to_nn_input[r][1]] = 1
-                nn_input[0, 24 + 3 * p_order, config.vertex_to_nn_input[r][0], config.vertex_to_nn_input[r][1]] = 1
+                nn_input[0, 24 + 3 * p_order, config.vertex_to_nn_input[r[0]][0], config.vertex_to_nn_input[r[0]][1]] = 1
+                nn_input[0, 24 + 3 * p_order, config.vertex_to_nn_input[r[1]][0], config.vertex_to_nn_input[r[1]][1]] = 1
 
         # Own Cards
         for key, r in enumerate([config.SHEEP, config.ORE, config.BRICK, config.WHEAT, config.WOOD]):
@@ -298,7 +325,14 @@ class MCTS_AI:
             p_order = (4 + p - state.get_player_moving()) % 4
 
             if p_order > 0:
-                nn_input[0, 38 + p_order, :, :] = state.players[state.get_player_moving()].total_cards()
+                if determined == 0:
+                    if p == self.player_id:
+                        nn_input[0, 38 + p_order, :, :] = state.players[p].total_cards()
+                    elif len(self.rivals_info[p]['cards']) > 0:
+                        sample_set = sample(self.rivals_info[p]['cards'], 1)
+                        nn_input[0, 38 + p_order, :, :] = sum(sample_set[0])
+                else:
+                    nn_input[0, 38 + p_order, :, :] = state.players[p].total_cards()
 
         # Robber
         for vertex in config.tiles_vertex[state.robber_tile]:
@@ -328,7 +362,13 @@ class MCTS_AI:
             p_order = (4 + p - state.get_player_moving()) % 4
 
             if p_order > 0:
-                nn_input[0, 59 + p_order, :, :] = state.players[state.get_player_moving()].total_special_cards()
+                if determined == 0:
+                    if p == self.player_id:
+                        nn_input[0, 59 + p_order, :, :] = state.players[p].total_special_cards()
+                    else:
+                        nn_input[0, 59 + p_order, :, :] = self.rivals_info[p]['special_cards']
+                else:
+                    nn_input[0, 59 + p_order, :, :] = state.players[state.get_player_moving()].total_special_cards()
 
         # Points
         for p in range(4):
@@ -380,10 +420,11 @@ class MCTS_AI:
             print (rootstate.player_turn)
             print (rootnode.possible_moves[0])
             return rootnode.possible_moves[0]
-
+        
         start_network = self.build_nn_input(rootstate, determined = 0)
-        prediction = self.nn.predict(start_network)
-        raise Exception(prediction)
+        start_prediction = self.nn.predict(start_network)
+        rootnode.add_probabilities(start_prediction[1][0])
+        print(start_prediction[0])
         
         for i in range(self.itermax):            
             node = rootnode
@@ -394,29 +435,27 @@ class MCTS_AI:
             self.determinization(state)
             
             # Select
-            node, expansion_nodes = self.select(state, node, prediction[1][0])
+            node, expansion_nodes = self.select(state, node)
             
             # Expand
             if expansion_nodes != []: # Otherwise this is a terminal Node
-                node = self.expand(state, node, expansion_nodes)
-                
-            # Rollout
-            #moves = state.ai_get_moves()
-            #m = 0
-            #while moves != [] and m < 700: # while state is non-terminal
-            #    state.ai_do_move(choice(moves))
-            #    moves = state.ai_get_moves()
-            #    m += 1
-
-            network = self.build_nn_input(state, determined = 1)
-            prediction = self.nn.predict(network)
+                node, prediction = self.expand(state, node, expansion_nodes)
 
             # Backpropagate
+            last_node_player = node.current_player
+            if state.game_phase == config.PHASE_END_GAME:
+                expansion_result = np.zeros(4)
+                for p in range(4):
+                    p_order = (4 + p - last_node_player) % 4
+                    expansion_result[p_order] = state.ai_get_result(p)
+            else:
+                expansion_result = prediction[0][0]
             while node != None: # backpropagate from the expanded node and work back to the root node
-                node.update(state.ai_get_result(node.current_player)) # state is terminal. Update node with result from POV of node.playerJustMoved
+                p_order = (4 + node.current_player - last_node_player) % 4
+                node.update(expansion_result[p_order]) # state is terminal. Update node with result from POV of node.playerJustMoved
                 node = node.parentNode
                 
         print (rootstate.player_turn)
         print (rootnode.ChildrenToString())
         
-        return sorted(rootnode.childNodes, key = lambda c: c.visits)[-1].move
+        return sorted(rootnode.childNodes, key = lambda c: c.N)[-1].move
