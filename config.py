@@ -7,6 +7,9 @@ player_is_human = {0: 0,
 
 main_color = (255, 255, 255)
 
+WIN_POINTS = 10
+MAX_MOVES = 100
+
 # Neural Network
 MOMENTUM = 0.9
 REG_CONST = 0.0001

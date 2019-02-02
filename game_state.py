@@ -27,6 +27,7 @@ class GameState:
         self.ai_rollout = 0
         self.special_cards_played = []
         self.dice_thrown = 0
+        self.moves = 0
 
         # Robber initial position
         self.robber_tile = self.tiles.index(config.DESERT)
@@ -36,7 +37,7 @@ class GameState:
             self.players.append(player.Player(i, config.player_is_human[i]))
 
             if config.player_is_human[i] == 0:
-                self.players[i].ai = MCTS_AI(i, 240)
+                self.players[i].ai = MCTS_AI(i, 400)
 
         self.max_road = {0: 1, 1: 1, 2: 1, 3: 1}
         
@@ -549,7 +550,7 @@ class GameState:
                 max_points.append((player_x.player_id, pl_points))
 
         # Is game finished?
-        if max_points[0][1] >= 10:
+        if max_points[0][1] >= config.WIN_POINTS or self.moves > config.MAX_MOVES:
             if len(max_points) == 1:
                 self.winner = max_points[0][0]
             else:
@@ -713,8 +714,10 @@ class GameState:
         self.dice_thrown = 0
         self.special_card_played_in_turn = 0
         self.next_player()
+        self.moves += 1
 
         if self.ai_rollout == 0:
+            print("Moves: " + str(self.moves))
             for p in range(4):
                 print("Player " + str(p) + ": " + str(self.players[p].points(hidden=0)) + " points")
 

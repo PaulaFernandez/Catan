@@ -35,7 +35,7 @@ class Node:
             n = self.childNodes[self.child_moves.index(m)]
             potential_moves.append(n)
         
-        s = sorted(potential_moves, key = lambda c: c.Q + 0.1 * self.prior_probabilities * sqrt(self.N / (1 + c.N)))[-1]
+        s = sorted(potential_moves, key = lambda c: c.Q + 0.2 * self.prior_probabilities * sqrt(self.N / (1 + c.N)))[-1]
         return s
     
     def update(self, result):
@@ -402,9 +402,15 @@ class MCTS_AI:
         # Special Cards
         state.special_cards = config.special_cards_vector
         for c in state.special_cards_played:
-            state.special_cards.pop(c)
+            try:
+                state.special_cards.pop(c)
+            except:
+                raise Exception("c: " + str(c) + ", special_cards: " + str(state.special_cards))
         for c in state.players[self.player_id].special_cards:
-            state.special_cards.pop(c)
+            try:
+                state.special_cards.pop(c)
+            except:
+                raise Exception("c: " + str(c) + ", special_cards: " + str(state.special_cards))
 
         shuffle(state.special_cards)
 
@@ -412,18 +418,28 @@ class MCTS_AI:
             if p != self.player_id:
                 for card in range(self.rivals_info[p]['special_cards']):
                     self.players[p].special_cards.append(self.special_cards.pop())
+
+    def calc_posteriors(self, rootnode):
+        posteriors = np.zeros(config.OUTPUT_DIM)
+
+        for n in rootnode.childNodes:
+            index_probs = config.available_moves.index(n.move)
+            posteriors[index_probs] = n.N / self.itermax
+
+        return posteriors
     
     def move(self, rootstate):
-        rootnode = Node(rootstate.player_turn)
+        rootnode = Node(rootstate.get_player_moving())
         
         if len(rootnode.get_possible_moves(rootstate)) == 1:
-            print (rootstate.player_turn)
+            print (rootstate.get_player_moving())
             print (rootnode.possible_moves[0])
-            return rootnode.possible_moves[0]
+            return rootnode.possible_moves[0], 0, 0, -1
         
         start_network = self.build_nn_input(rootstate, determined = 0)
         start_prediction = self.nn.predict(start_network)
         rootnode.add_probabilities(start_prediction[1][0])
+        print(rootstate.get_player_moving())
         print(start_prediction[0])
         
         for i in range(self.itermax):            
@@ -455,7 +471,8 @@ class MCTS_AI:
                 node.update(expansion_result[p_order]) # state is terminal. Update node with result from POV of node.playerJustMoved
                 node = node.parentNode
                 
-        print (rootstate.player_turn)
         print (rootnode.ChildrenToString())
+
+        posterior_probs = self.calc_posteriors(rootnode)
         
-        return sorted(rootnode.childNodes, key = lambda c: c.N)[-1].move
+        return sorted(rootnode.childNodes, key = lambda c: c.N)[-1].move, posterior_probs, start_network, rootstate.get_player_moving()
