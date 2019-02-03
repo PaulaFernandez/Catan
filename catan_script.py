@@ -18,5 +18,16 @@ def play_game():
         game_result.append(game.ai_get_result(p))
     game_memory.add_game_result(game_result)
 
+    game_memory.dump_to_file()
+
 config.WIN_POINTS = 3
-play_game()
+agents = [1]
+games_played = 0
+
+while games_played < config.SELF_PLAY_BATCH_SIZE:
+    try:
+        play_game()
+        games_played += 1
+    except Exception as e:
+        with open('log.txt', 'a') as output:
+            output.write(e)

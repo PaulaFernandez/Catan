@@ -24,6 +24,13 @@ class Node:
         self.Q = 0
         self.move_probabilities = []
         self.prior_probabilities = prior_probs
+
+    def move_index(self, move):
+        if move[0] != config.STEAL_FROM_HOUSE:
+            return config.available_moves.index(move)
+        else:
+            p_order = (4 + move[1][1] - self.current_player) % 4
+            return config.available_moves.index((move[0], (move[1][0], p_order)))
         
     def add_probabilities(self, probs):
         self.move_probabilities = probs
@@ -35,7 +42,7 @@ class Node:
             n = self.childNodes[self.child_moves.index(m)]
             potential_moves.append(n)
         
-        s = sorted(potential_moves, key = lambda c: c.Q + 0.2 * self.prior_probabilities * sqrt(self.N / (1 + c.N)))[-1]
+        s = sorted(potential_moves, key = lambda c: c.Q + 0.2 * c.prior_probabilities * sqrt(self.N / (1 + c.N)))[-1]
         return s
     
     def update(self, result):
@@ -58,14 +65,14 @@ class Node:
         return possible_expansion
     
     def add_child(self, player, move):
+        index_probs = self.move_index(move)
         if move[0] == config.THROW_DICE:
-            n = Dice_Node(player, self)
+            n = Dice_Node(player, self, prior_probs = self.move_probabilities[index_probs])
         elif move[0] == config.BUY_SPECIAL_CARD:
-            n = Buy_Card_Node(player, self)
+            n = Buy_Card_Node(player, self, prior_probs = self.move_probabilities[index_probs])
         elif move[0] == config.STEAL_FROM_HOUSE:
-            n = Steal_Card_Node(player, move, self)
+            n = Steal_Card_Node(player, move, self, prior_probs = self.move_probabilities[index_probs])
         else:
-            index_probs = config.available_moves.index(move)
             try:
                 n = Node(player, self, move, prior_probs = self.move_probabilities[index_probs])
             except:
@@ -84,8 +91,8 @@ class Node:
         return "[M:" + str(self.move) + " Q/N:" + str(self.Q) + "/" + str(self.N) + "]"
 
 class Dice_Node(Node):
-    def __init__(self, player, parent = None):
-        Node.__init__(self, player, parent, (config.THROW_DICE,))
+    def __init__(self, player, parent = None, prior_probs = 0.0):
+        Node.__init__(self, player, parent, (config.THROW_DICE,), prior_probs)
         self.possible_moves = [(config.THROW_DICE, x) for x in range(2, 13)]
         self.is_random = True
         
@@ -115,8 +122,8 @@ class Dice_Node(Node):
         return node
 
 class Steal_Card_Node(Node):
-    def __init__(self, player, move, parent = None):
-        Node.__init__(self, player, parent, move)
+    def __init__(self, player, move, parent = None, prior_probs = 0.0):
+        Node.__init__(self, player, parent, move, prior_probs)
         self.possible_moves = [(config.STEAL_FROM_HOUSE, move[1], key) for key in config.card_types]
         self.is_random = True
         
@@ -144,8 +151,8 @@ class Steal_Card_Node(Node):
         return node
 
 class Buy_Card_Node(Node):
-    def __init__(self, player, parent = None):
-        Node.__init__(self, player, parent, (config.BUY_SPECIAL_CARD,))
+    def __init__(self, player, parent = None, prior_probs = 0.0):
+        Node.__init__(self, player, parent, (config.BUY_SPECIAL_CARD,), prior_probs)
         self.possible_moves = [(config.BUY_SPECIAL_CARD, config.VICTORY_POINT),
                                (config.BUY_SPECIAL_CARD, config.KNIGHT),
                                (config.BUY_SPECIAL_CARD, config.MONOPOLY),
@@ -179,6 +186,7 @@ class MCTS_AI:
         self.rivals_info = {}
 
         self.nn = Residual_CNN(config.REG_CONST, config.LEARNING_RATE, config.INPUT_DIM, config.OUTPUT_DIM, config.HIDDEN_CNN_LAYERS)
+        self.nn.read(1)
 
         for p in range(4):
             if p != self.player_id:
@@ -423,7 +431,7 @@ class MCTS_AI:
         posteriors = np.zeros(config.OUTPUT_DIM)
 
         for n in rootnode.childNodes:
-            index_probs = config.available_moves.index(n.move)
+            index_probs = n.move_index(n.move)
             posteriors[index_probs] = n.N / self.itermax
 
         return posteriors

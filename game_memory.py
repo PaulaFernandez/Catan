@@ -1,4 +1,6 @@
 import numpy as np
+import pickle
+import config
 
 class GameMemory():
     def __init__(self, game_uuid):
@@ -15,3 +17,7 @@ class GameMemory():
             for p in range(4):
                 p_order = (4 + p - s[0]) % 4
                 self.game_results[k] = result[p]
+
+    def dump_to_file(self):
+        with open(config.folder_self_play + '\\' + str(self.game_id) + '.pkl', 'wb') as output:
+            pickle.dump(self, output, -1)

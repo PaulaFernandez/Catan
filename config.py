@@ -11,6 +11,8 @@ WIN_POINTS = 10
 MAX_MOVES = 100
 
 # Neural Network
+SELF_PLAY_BATCH_SIZE = 5
+MCTS_EXPLORATION = 200
 MOMENTUM = 0.9
 REG_CONST = 0.0001
 LEARNING_RATE = 0.1
@@ -24,6 +26,9 @@ HIDDEN_CNN_LAYERS = [
 	 , {'filters':128, 'kernel_size': (3,3)}
 	 , {'filters':128, 'kernel_size': (3,3)}
 	]
+
+folder_self_play = 'games'
+folder_agents = 'agents'
 
 # Resources
 WATER = 0

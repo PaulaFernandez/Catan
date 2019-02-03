@@ -37,7 +37,7 @@ class GameState:
             self.players.append(player.Player(i, config.player_is_human[i]))
 
             if config.player_is_human[i] == 0:
-                self.players[i].ai = MCTS_AI(i, 400)
+                self.players[i].ai = MCTS_AI(i, config.MCTS_EXPLORATION)
 
         self.max_road = {0: 1, 1: 1, 2: 1, 3: 1}
         

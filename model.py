@@ -14,25 +14,6 @@ class Gen_Model():
         self.learning_rate = learning_rate
         self.input_dim = input_dim
         self.output_dim = output_dim
-
-    def predict(self, x):
-        return self.model.predict(x)
-
-    def fit(self, states, targets, epochs, verbose, validation_split, batch_size):
-        return self.model.fit(states, targets, epochs=epochs, verbose=verbose, validation_split = validation_split, batch_size = batch_size)
-
-    def write(self, game, version):
-        self.model.save(run_folder + 'models/version' + "{0:0>4}".format(version) + '.h5')
-
-    def read(self, game, run_number, version):
-        return load_model( run_archive_folder + game + '/run' + str(run_number).zfill(4) + "/models/version" + "{0:0>4}".format(version) + '.h5', custom_objects={'softmax_cross_entropy_with_logits': softmax_cross_entropy_with_logits})
-
-class Residual_CNN(Gen_Model):
-    def __init__(self, reg_const, learning_rate, input_dim,  output_dim, hidden_layers):
-        Gen_Model.__init__(self, reg_const, learning_rate, input_dim, output_dim)
-        self.hidden_layers = hidden_layers
-        self.num_layers = len(hidden_layers)
-        self.model = self._build_model()
         
     def softmax_cross_entropy_with_logits(self, y_true, y_pred):
         p = y_pred
@@ -44,9 +25,28 @@ class Residual_CNN(Gen_Model):
         negatives = tf.fill(tf.shape(pi), -100.0) 
         p = tf.where(where, negatives, p)
 
-        loss = tf.nn.softmax_cross_entropy_with_logits(labels = pi, logits = p)
+        loss = tf.nn.softmax_cross_entropy_with_logits_v2(labels = pi, logits = p)
 
         return loss
+
+    def predict(self, x):
+        return self.model.predict(x)
+
+    def fit(self, states, targets, epochs, verbose, validation_split, batch_size):
+        return self.model.fit(states, targets, epochs=epochs, verbose=verbose, validation_split = validation_split, batch_size = batch_size)
+
+    def write(self, version):
+        self.model.save(config.folder_agents + '\\' + "{0:0>5}".format(version) + '.h5')
+
+    def read(self, version):
+        return load_model( config.folder_agents + '\\' + "{0:0>5}".format(version) + '.h5', custom_objects={'softmax_cross_entropy_with_logits': self.softmax_cross_entropy_with_logits})
+
+class Residual_CNN(Gen_Model):
+    def __init__(self, reg_const, learning_rate, input_dim,  output_dim, hidden_layers):
+        Gen_Model.__init__(self, reg_const, learning_rate, input_dim, output_dim)
+        self.hidden_layers = hidden_layers
+        self.num_layers = len(hidden_layers)
+        self.model = self._build_model()
 
     def residual_layer(self, input_block, filters, kernel_size):
         x = self.conv_layer(input_block, filters, kernel_size)
