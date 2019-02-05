@@ -2,10 +2,19 @@ import pickle
 import config
 from draw_screen import DrawScreen
 from game_state import GameState
+from model import Residual_CNN
 
 class GameController:
     def __init__(self):
-        self.game = GameState()
+        agents = [config.CURRENT_AGENT]
+        agents_obj = {}
+
+        for a in agents:
+            net = Residual_CNN(config.REG_CONST, config.LEARNING_RATE, config.INPUT_DIM, config.OUTPUT_DIM, config.HIDDEN_CNN_LAYERS)
+            net.read(a)
+            agents_obj[str(a)] = net
+
+        self.game = GameState(agents_obj = agents_obj)
         self.draw_tool = DrawScreen()
         self.redraw()
 
@@ -84,7 +93,7 @@ class GameController:
         if self.game.players[self.game.get_player_moving()].is_human == 0:
             if self.check_click(pos) == ('action', config.CONTINUE_GAME):
                 self.game.dices = (0, 0)
-                move = self.game.players[self.game.get_player_moving()].ai.move(self.game)
+                move, _, _, _ = self.game.players[self.game.get_player_moving()].ai.move(self.game)
                 self.game.ai_do_move(move)
                 self.redraw()
             return

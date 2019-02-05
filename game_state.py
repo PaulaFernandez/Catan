@@ -6,7 +6,7 @@ import config
 from mcts_ai import MCTS_AI
 
 class GameState:
-    def __init__(self):
+    def __init__(self, agents_obj = None):
         self.uuid = uuid.uuid1()
         self.counter = 0
 
@@ -37,7 +37,7 @@ class GameState:
             self.players.append(player.Player(i, config.player_is_human[i]))
 
             if config.player_is_human[i] == 0:
-                self.players[i].ai = MCTS_AI(i, config.MCTS_EXPLORATION)
+                self.players[i].ai = MCTS_AI(i, agents_obj[str(config.CURRENT_AGENT)], config.MCTS_EXPLORATION)
 
         self.max_road = {0: 1, 1: 1, 2: 1, 3: 1}
         
@@ -432,6 +432,7 @@ class GameState:
                 self.players[self.player_turn].settlements.append(vertex_released)
                 #self.calculate_longest_road()
                 self.remove_resources_ai(config.resources['settlement'], self.player_turn)
+                self.check_end_game()
 
         self.current_action = -1
 
@@ -441,6 +442,7 @@ class GameState:
             self.players[self.player_turn].cities.append(vertex_released)
             self.players[self.player_turn].remove_resources_by_improvement('city')
             self.remove_resources_ai(config.resources['city'], self.player_turn)
+            self.check_end_game()
 
         self.current_action = -1
 
@@ -461,6 +463,7 @@ class GameState:
                 self.remove_resources_ai(config.resources['road'], self.player_turn)
                 if len(self.players[self.player_turn].roads) >= 5:
                     self.calculate_longest_road(self.player_turn)
+                    self.check_end_game()
 
         elif self.game_phase == config.PHASE_ROAD_BUILDING:
             if road_released in self.valid_roads():
@@ -660,6 +663,7 @@ class GameState:
                 self.remove_resources_ai(config.resources['special_card'], self.player_turn)
                 self.add_special_card_ai(self.player_turn)
                 self.players[self.player_turn].special_cards.append(self.special_cards.pop())
+                self.check_end_game()
 
     def handle_buy_given_special_card(self, card):
         self.players[self.player_turn].remove_resources_by_improvement('special_card')

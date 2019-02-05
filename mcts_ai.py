@@ -36,14 +36,17 @@ class Node:
         self.move_probabilities = probs
         
     def UCTSelectChild(self):
+        def evaluation(x):
+            return x.Q + 0.02 * x.prior_probabilities * sqrt(self.N / (1 + x.N))
+
         potential_moves = []
         
         for m in self.possible_moves:
             n = self.childNodes[self.child_moves.index(m)]
             potential_moves.append(n)
         
-        s = sorted(potential_moves, key = lambda c: c.Q + 0.2 * c.prior_probabilities * sqrt(self.N / (1 + c.N)))[-1]
-        return s
+        s = sorted(potential_moves, key = evaluation )
+        return s[-1]
     
     def update(self, result):
         self.N += 1
@@ -180,13 +183,12 @@ class Buy_Card_Node(Node):
         return node
 
 class MCTS_AI:
-    def __init__(self, player_id, itermax):
+    def __init__(self, player_id, agent, itermax):
         self.itermax = itermax
         self.player_id = player_id
         self.rivals_info = {}
 
-        self.nn = Residual_CNN(config.REG_CONST, config.LEARNING_RATE, config.INPUT_DIM, config.OUTPUT_DIM, config.HIDDEN_CNN_LAYERS)
-        self.nn.read(1)
+        self.nn = agent
 
         for p in range(4):
             if p != self.player_id:
@@ -408,7 +410,7 @@ class MCTS_AI:
                                           config.WOOD: cards_set[4]}
 
         # Special Cards
-        state.special_cards = config.special_cards_vector
+        state.special_cards = deepcopy(config.special_cards_vector)
         for c in state.special_cards_played:
             try:
                 state.special_cards.pop(c)
@@ -425,7 +427,7 @@ class MCTS_AI:
         for p in range(4):
             if p != self.player_id:
                 for card in range(self.rivals_info[p]['special_cards']):
-                    self.players[p].special_cards.append(self.special_cards.pop())
+                    state.players[p].special_cards.append(self.special_cards.pop())
 
     def calc_posteriors(self, rootnode):
         posteriors = np.zeros(config.OUTPUT_DIM)

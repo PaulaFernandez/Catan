@@ -16,7 +16,7 @@ class GameMemory():
             self.game_results.append(np.zeros(4))
             for p in range(4):
                 p_order = (4 + p - s[0]) % 4
-                self.game_results[k] = result[p]
+                self.game_results[k][p_order] = result[p]
 
     def dump_to_file(self):
         with open(config.folder_self_play + '\\' + str(self.game_id) + '.pkl', 'wb') as output:
