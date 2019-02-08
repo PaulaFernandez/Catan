@@ -37,7 +37,7 @@ class Node:
         
     def UCTSelectChild(self):
         def evaluation(x):
-            return x.Q + 0.02 * x.prior_probabilities * sqrt(self.N / (1 + x.N))
+            return x.Q + 0.2 * (x.prior_probabilities / 2.0 + 0.5) * sqrt(self.N / (0.01 + x.N))
 
         potential_moves = []
         
@@ -256,13 +256,13 @@ class MCTS_AI:
                 state.ai_do_move(node.move)
 
                 if evaluate == True:
-                    network = self.build_nn_input(state, determined = 1)
+                    network = self.build_nn_input(state, node.current_player, determined = 1)
                     prediction = self.nn.predict(network)
                     
                     node.add_probabilities(prediction[1][0])
             else:
                 expansion_nodes = node.check_untried(state)
-                if expansion_nodes != [] or (expansion_nodes == [] and node.childNodes == []):
+                if expansion_nodes != [] or state.game_phase == config.PHASE_END_GAME:
                     return node, expansion_nodes
                 else:
                     node = node.UCTSelectChild()
@@ -276,7 +276,7 @@ class MCTS_AI:
             state.ai_do_move(m)
         node = node.add_child(current_player, m) # add child and descend tree
 
-        network = self.build_nn_input(state, determined = 1)
+        network = self.build_nn_input(state, node.current_player, determined = 1)
         prediction = self.nn.predict(network)
         
         node.add_probabilities(prediction[1][0])
@@ -286,14 +286,14 @@ class MCTS_AI:
             state.ai_do_move(node.move)
 
             if evaluate == True:
-                network = self.build_nn_input(state, determined = 1)
+                network = self.build_nn_input(state, node.current_player, determined = 1)
                 prediction = self.nn.predict(network)
                 
                 node.add_probabilities(prediction[1][0])
 
         return node, prediction
 
-    def build_nn_input(self, state, determined = 0):
+    def build_nn_input(self, state, perspective, determined = 0):
         nn_input = np.zeros((1, 70, 6, 11), dtype=np.float32)
 
         # Resources
@@ -317,7 +317,7 @@ class MCTS_AI:
         
         # Settlements, cities, roads
         for p in range(4):
-            p_order = (4 + p - state.get_player_moving()) % 4
+            p_order = (4 + p - perspective) % 4
             for s in state.players[p].settlements:
                 nn_input[0, 22 + 3 * p_order, config.vertex_to_nn_input[s][0], config.vertex_to_nn_input[s][1]] = 1
             for c in state.players[p].cities:
@@ -328,11 +328,11 @@ class MCTS_AI:
 
         # Own Cards
         for key, r in enumerate([config.SHEEP, config.ORE, config.BRICK, config.WHEAT, config.WOOD]):
-            nn_input[0, 34 + key, :, :] = state.players[state.get_player_moving()].cards[r]
+            nn_input[0, 34 + key, :, :] = state.players[perspective].cards[r]
 
         # Rival Cards
         for p in range(4):
-            p_order = (4 + p - state.get_player_moving()) % 4
+            p_order = (4 + p - perspective) % 4
 
             if p_order > 0:
                 if determined == 0:
@@ -350,26 +350,26 @@ class MCTS_AI:
 
         # Army Cards Played
         for p in range(4):
-            p_order = (4 + p - state.get_player_moving()) % 4
+            p_order = (4 + p - perspective) % 4
             nn_input[0, 43 + p_order, :, :] = state.players[p].used_knights
 
         # Army Holder
         for p in range(4):
-            p_order = (4 + p - state.get_player_moving()) % 4
+            p_order = (4 + p - perspective) % 4
             nn_input[0, 47 + p_order, :, :] = state.players[p].largest_army_badge
 
         # Longest Road Holder
         for p in range(4):
-            p_order = (4 + p - state.get_player_moving()) % 4
+            p_order = (4 + p - perspective) % 4
             nn_input[0, 51 + p_order, :, :] = state.players[p].longest_road_badge
 
         # Own Special Cards
         for key, r in enumerate([config.VICTORY_POINT, config.KNIGHT, config.MONOPOLY, config.ROAD_BUILDING, config.YEAR_OF_PLENTY]):
-            nn_input[0, 55 + key, :, :] = state.players[state.get_player_moving()].special_cards.count(r)
+            nn_input[0, 55 + key, :, :] = state.players[perspective].special_cards.count(r)
 
         # Rival Special Cards
         for p in range(4):
-            p_order = (4 + p - state.get_player_moving()) % 4
+            p_order = (4 + p - perspective) % 4
 
             if p_order > 0:
                 if determined == 0:
@@ -378,11 +378,11 @@ class MCTS_AI:
                     else:
                         nn_input[0, 59 + p_order, :, :] = self.rivals_info[p]['special_cards']
                 else:
-                    nn_input[0, 59 + p_order, :, :] = state.players[state.get_player_moving()].total_special_cards()
+                    nn_input[0, 59 + p_order, :, :] = state.players[perspective].total_special_cards()
 
         # Points
         for p in range(4):
-            p_order = (4 + p - state.get_player_moving()) % 4
+            p_order = (4 + p - perspective) % 4
             nn_input[0, 63 + p_order, :, :] = state.players[p].points()
 
         # Discarding, initial game phase
@@ -427,7 +427,7 @@ class MCTS_AI:
         for p in range(4):
             if p != self.player_id:
                 for card in range(self.rivals_info[p]['special_cards']):
-                    state.players[p].special_cards.append(self.special_cards.pop())
+                    state.players[p].special_cards.append(state.special_cards.pop())
 
     def calc_posteriors(self, rootnode):
         posteriors = np.zeros(config.OUTPUT_DIM)
@@ -446,19 +446,25 @@ class MCTS_AI:
             print (rootnode.possible_moves[0])
             return rootnode.possible_moves[0], 0, 0, -1
         
-        start_network = self.build_nn_input(rootstate, determined = 0)
+        start_network = self.build_nn_input(rootstate, rootnode.current_player, determined = 0)
         start_prediction = self.nn.predict(start_network)
         rootnode.add_probabilities(start_prediction[1][0])
         print(rootstate.get_player_moving())
         print(start_prediction[0])
         
-        for i in range(self.itermax):            
-            node = rootnode
-            state = deepcopy(rootstate)
-            state.ai_rollout = 1
+        for i in range(self.itermax):
+            valid_determinization = False
+            
+            while valid_determinization is False:
+                node = rootnode
+                state = deepcopy(rootstate)
+                state.ai_rollout = 1
 
-            # Determinization
-            self.determinization(state)
+                # Determinization
+                self.determinization(state)
+                
+                if state.game_phase != config.PHASE_END_GAME:
+                    valid_determinization = True
             
             # Select
             node, expansion_nodes = self.select(state, node)
@@ -475,9 +481,16 @@ class MCTS_AI:
                     p_order = (4 + p - last_node_player) % 4
                     expansion_result[p_order] = state.ai_get_result(p)
             else:
-                expansion_result = prediction[0][0]
+                expansion_result = [None, None, None, None]
+                expansion_result[0] = prediction[0][0][0]
             while node != None: # backpropagate from the expanded node and work back to the root node
                 p_order = (4 + node.current_player - last_node_player) % 4
+                
+                if expansion_result[p_order] is None:
+                    network = self.build_nn_input(state, node.current_player, determined = 1)
+                    prediction = self.nn.predict(network)
+                    expansion_result[p_order] = prediction[0][0][0]
+                    
                 node.update(expansion_result[p_order]) # state is terminal. Update node with result from POV of node.playerJustMoved
                 node = node.parentNode
                 

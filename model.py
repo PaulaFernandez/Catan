@@ -36,10 +36,10 @@ class Gen_Model():
         return self.model.fit(states, targets, epochs=epochs, verbose=verbose, validation_split = validation_split, batch_size = batch_size)
 
     def write(self, version):
-        self.model.save(config.folder_agents + '\\' + "{0:0>5}".format(version) + '.h5')
+        self.model.save_weights(config.folder_agents + '\\' + "{0:0>5}".format(version) + '.h5')
 
     def read(self, version):
-        return load_model( config.folder_agents + '\\' + "{0:0>5}".format(version) + '.h5', custom_objects={'softmax_cross_entropy_with_logits': self.softmax_cross_entropy_with_logits})
+        return self.model.load_weights( config.folder_agents + '\\' + "{0:0>5}".format(version) + '.h5')
 
 class Residual_CNN(Gen_Model):
     def __init__(self, reg_const, learning_rate, input_dim,  output_dim, hidden_layers):

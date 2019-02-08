@@ -10,6 +10,8 @@ net = Residual_CNN(config.REG_CONST, config.LEARNING_RATE, config.INPUT_DIM, con
 net.read(config.CURRENT_AGENT)
 
 for i in range(config.TRAINING_LOOPS):
+    print ("Iteration #" + str(i))
+
     batch_states = []
     batch_target_results = []
     batch_target_probs = []

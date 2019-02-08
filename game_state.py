@@ -675,6 +675,7 @@ class GameState:
         self.special_cards_played.append(config.KNIGHT)
         if self.players[self.player_turn].used_knights >= 3:
             self.check_largest_army_badge()
+            self.check_end_game()
 
         self.remove_special_card_ai(self.player_turn)
         self.special_card_played_in_turn = 1

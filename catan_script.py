@@ -1,6 +1,7 @@
 from game_state import GameState
 from game_memory import GameMemory
 import config
+import traceback
 
 from model import Residual_CNN
 
@@ -38,4 +39,4 @@ while games_played < config.SELF_PLAY_BATCH_SIZE:
         games_played += 1
     except Exception as e:
         with open('log.txt', 'a') as output:
-            output.write(e)
+            traceback.print_exc(file = output)

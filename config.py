@@ -11,8 +11,8 @@ WIN_POINTS = 10
 MAX_MOVES = 100
 
 # Neural Network
-CURRENT_AGENT = 1
-SELF_PLAY_BATCH_SIZE = 150
+CURRENT_AGENT = 4
+SELF_PLAY_BATCH_SIZE = 200
 TRAIN_BATCH_SIZE = 256
 TRAINING_LOOPS = 100
 EPOCHS = 2
@@ -21,7 +21,7 @@ MOMENTUM = 0.9
 REG_CONST = 0.0001
 LEARNING_RATE = 0.1
 INPUT_DIM = (70, 6, 11)
-OUTPUT_DIM = 699
+OUTPUT_DIM = 941
 HIDDEN_CNN_LAYERS = [
 	{'filters':128, 'kernel_size': (3,3)}
 	 , {'filters':128, 'kernel_size': (3,3)}
@@ -64,6 +64,9 @@ PHASE_PORTS_TRADE = (1, 5)        # Trade in ports (including 4:1)
 PHASE_MONOPOLY = (1, 6)           # Choose resource to monopolise
 PHASE_ROAD_BUILDING = (1, 7)      # Build 2 roads for free
 PHASE_YEAR_OF_PLENTY = (1, 8)     # Choose 2 resources from the bank
+PHASE_TRADE_OFFER = (1, 9)        # Choose resources to offer
+PHASE_TRADE_RECEIVE = (1, 10)     # Choose resources to receive
+PHASE_TRADE_RESPOND = (1, 11)     # Choose whether to accept or reject
 PHASE_END_GAME = (2, 0)           # End of game, player has reached 10 points
 
 # Needed resources for actions
@@ -102,6 +105,8 @@ DISCARD = 8
 PLAY_SPECIAL_CARD = 9
 PORT_TRADE = 10
 RESOURCE_YEAR_PLENTY = 11
+TRADE_OFFER = 12
+TRADE_RESPONSE = 13
 SAVE_GAME = 100
 LOAD_GAME = 101
 CONTINUE_GAME = 102
@@ -373,3 +378,12 @@ for i in [KNIGHT, MONOPOLY, ROAD_BUILDING, YEAR_OF_PLENTY]:
         available_moves.append((PLAY_SPECIAL_CARD, i))
 for i in [SHEEP, ORE, WHEAT, BRICK, WOOD]:
     available_moves.append((RESOURCE_YEAR_PLENTY, i))
+for p in range(1, 4):
+    for i in [SHEEP, ORE, WHEAT, BRICK, WOOD]:
+        for q in range(1, 3):
+            for j in [SHEEP, ORE, WHEAT, BRICK, WOOD]:
+                if i != j:
+                    for l in range(1, 3):
+                        available_moves.append((TRADE_OFFER, p, (i, q), (j, l)))
+available_moves.append((TRADE_RESPONSE, 1))
+available_moves.append((TRADE_RESPONSE, 0))
