@@ -109,7 +109,7 @@ class Residual_CNN(Gen_Model):
         x = LeakyReLU()(x)
 
         x = Dense(
-            4
+            1
             , use_bias=False
             , activation='tanh'
             , kernel_regularizer=regularizers.l2(self.reg_const)
