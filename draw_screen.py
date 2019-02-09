@@ -49,6 +49,8 @@ class DrawScreen:
             x += config.player_stats_x_offset
             y += config.player_stats_y_offset
 
+            self.draw(x + config.start_trade_x_offset, y + config.start_trade_y_offset, config.start_trade['img'], config.start_trade_size)
+
             if player_turn == key:
                 pygame.draw.circle(self.screen, config.players[key]['color'], (x + config.turn_x_offset, y + config.turn_y_offset), config.turn_radius, config.turn_radius)
             if player_x.largest_army_badge == 1:

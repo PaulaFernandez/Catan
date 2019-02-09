@@ -59,6 +59,14 @@ class GameController:
                     if self.game.special_card_played_in_turn == 0:
                         return ('special_card', special_card_type)
 
+            for p in range(4):
+                if self.pos_in_rectangle(pos, 
+                                         config.player_stats_x + config.start_trade_x_offset, 
+                                         config.player_stats_y + p * (config.player_stats_y + config.player_stats_height) + config.start_trade_y_offset, 
+                                         config.start_trade_size[0], 
+                                         config.start_trade_size[1]):
+                    return ('action', config.TRADE_OFFER, p)
+
             if self.pos_in_rectangle(pos, config.throw_dice_position[0], config.throw_dice_position[1], config.throw_dice_size[0], config.throw_dice_size[1]):
                 return ('action', config.THROW_DICE)
 
@@ -144,6 +152,8 @@ class GameController:
                 self.game.game_phase = config.PHASE_YEAR_OF_PLENTY
                 self.game.log = "Choose resources"
                 self.game.resources_in_year_of_plenty = 2
+            elif self.check_click(pos)[1] == config.TRADE_OFFER:
+                self.game.start_players_trade(self.check_click(pos)[2])
             elif click_port[0] == 'port':
                 self.game.game_phase = config.PHASE_PORTS_TRADE
                 self.game.start_port_trade(click_port[1])
@@ -178,6 +188,14 @@ class GameController:
             click = self.check_click(pos)
             if click[0] == 'card':
                 self.game.handle_play_year_of_plenty(click[1])
+        elif self.game.game_phase == config.PHASE_TRADE_OFFER:
+            click = self.check_click(pos)
+            if click[0] == 'card':
+                self.game.handle_resource_added_trade(click[1])
+        elif self.game.game_phase == config.PHASE_TRADE_RECEIVE:
+            click = self.check_click(pos)
+            if click[0] == 'card':
+                self.game.handle_resource_added_trade(click[1])
 
         if self.check_click(pos) == ('action', config.SAVE_GAME):
             with open('game.pkl', 'wb') as output:

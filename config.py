@@ -1,7 +1,7 @@
 import math
 
-player_is_human = {0: 0,
-                   1: 0,
+player_is_human = {0: 1,
+                   1: 1,
                    2: 0,
                    3: 0}
 
@@ -11,7 +11,7 @@ WIN_POINTS = 10
 MAX_MOVES = 100
 
 # Neural Network
-CURRENT_AGENT = 4
+CURRENT_AGENT = 1
 SELF_PLAY_BATCH_SIZE = 200
 TRAIN_BATCH_SIZE = 256
 TRAINING_LOOPS = 100
@@ -337,6 +337,11 @@ trade41_size = (64, 64)
 buy_special_card = {'img': 'img/card-draw.png'}
 buy_special_card_position = (925, 115)
 buy_special_card_size = (64, 64)
+
+start_trade = {'img': 'img/card-exchange.png'}
+start_trade_x_offset = 160
+start_trade_y_offset = 5
+start_trade_size = (35, 35)
 
 big_dice_x1 = 350
 big_dice_x2 = 650

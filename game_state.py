@@ -23,6 +23,7 @@ class GameState:
         self.roads_in_road_building = 0
         self.resources_in_year_of_plenty = 0
         self.special_card_played_in_turn = 0
+        self.trades_offered_in_turn = 0
         self.winner = None
         self.ai_rollout = 0
         self.special_cards_played = []
@@ -44,6 +45,7 @@ class GameState:
         # Starting player
         self.player_turn = choice([0, 1, 2, 3])
         self.initial_phase_start_player = self.player_turn
+        self.initialise_trade()
 
         # Log
         self.log = "Player " + str(self.player_turn + 1) + ": place settlement"
@@ -91,6 +93,9 @@ class GameState:
             special_cards.extend([key] * value['count'])
         shuffle(special_cards)
         return special_cards
+    
+    def initialise_trade(self):
+        self.players_trade = {'P1': None, 'R1': None, 'P2': None, 'R2': None}
     
     def add_resources_ai(self, cards, player_id):
         if self.ai_rollout == 0:
@@ -719,6 +724,7 @@ class GameState:
         self.dice_thrown = 0
         self.special_card_played_in_turn = 0
         self.next_player()
+        self.initialise_trade()
         self.moves += 1
 
         if self.ai_rollout == 0:
@@ -733,6 +739,34 @@ class GameState:
             return self.players_to_discard[0][0]
         else:
             return self.player_turn
+
+    def start_players_trade(self, player2):
+        if self.trades_offered_in_turn >= 3:
+            self.players_trade['P1'] = self.player_turn
+            self.players_trade['P2'] = player2
+            self.players_trade['R1'] = {}
+            self.players_trade['R2'] = {}
+
+            self.trades_offered_in_turn +=1
+            self.game_phase = config.PHASE_TRADE_OFFER
+            self.log = "Select resources to offer"
+        else:
+            self.log = "You have offered too many deals this turn"
+
+    def handle_resource_added_trade(self, resource_clicked):
+        if self.game_phase == config.PHASE_TRADE_OFFER:
+            if resource_clicked in self.players_trade['R1']:
+                if self.players[self.player_turn].available_cards({resource_clicked: self.players_trade['R1'][resource_clicked] + 1}):
+                    self.players_trade['R1'][resource_clicked] += 1
+                elif self.players[self.player_turn].available_cards({resource_clicked: 1}):
+                    self.players_trade['R1'][resource_clicked] = 1
+        
+        elif self.game_phase == config.PHASE_TRADE_RECEIVE:
+            if resource_clicked in self.players_trade['R2']:
+                if self.players[self.players_trade['P2']].available_cards({resource_clicked: self.players_trade['R2'][resource_clicked] + 1}):
+                    self.players_trade['R2'][resource_clicked] += 1
+                elif self.players[self.players_trade['P2']].available_cards({resource_clicked: 1}):
+                    self.players_trade['R2'][resource_clicked] = 1
     
     def ai_get_moves(self):
         moves = []
