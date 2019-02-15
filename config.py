@@ -1,7 +1,7 @@
 import math
 
-player_is_human = {0: 1,
-                   1: 1,
+player_is_human = {0: 0,
+                   1: 0,
                    2: 0,
                    3: 0}
 
@@ -12,7 +12,7 @@ MAX_MOVES = 100
 
 # Neural Network
 CURRENT_AGENT = 1
-SELF_PLAY_BATCH_SIZE = 200
+SELF_PLAY_BATCH_SIZE = 1
 TRAIN_BATCH_SIZE = 256
 TRAINING_LOOPS = 100
 EPOCHS = 2
@@ -20,7 +20,7 @@ MCTS_EXPLORATION = 200
 MOMENTUM = 0.9
 REG_CONST = 0.0001
 LEARNING_RATE = 0.1
-INPUT_DIM = (70, 6, 11)
+INPUT_DIM = (80, 6, 11)
 OUTPUT_DIM = 941
 HIDDEN_CNN_LAYERS = [
 	{'filters':128, 'kernel_size': (3,3)}
@@ -107,6 +107,8 @@ PORT_TRADE = 10
 RESOURCE_YEAR_PLENTY = 11
 TRADE_OFFER = 12
 TRADE_RESPONSE = 13
+ACCEPT_TRADE = 14
+REJECT_TRADE = 15
 SAVE_GAME = 100
 LOAD_GAME = 101
 CONTINUE_GAME = 102
@@ -321,6 +323,14 @@ throw_dice_size = (64, 64)
 continue_game = {'img': 'img/next.png'}
 continue_game_position = (925, 650)
 continue_game_size = (64, 64)
+
+accept_trade = {'img': 'img/thumb-up.png'}
+accept_trade_position = (925, 550)
+accept_trade_size = (64, 64)
+
+reject_trade = {'img': 'img/cancel.png'}
+reject_trade_position = (1000, 550)
+reject_trade_size = (64, 64)
 
 save_game = {'img': 'img/save.png'}
 save_game_position = (1000, 15)

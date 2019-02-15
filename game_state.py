@@ -737,11 +737,13 @@ class GameState:
     def get_player_moving(self):
         if self.game_phase == config.PHASE_DISCARD and len(self.players_to_discard) > 0:
             return self.players_to_discard[0][0]
+        elif self.game_phase == config.PHASE_TRADE_RESPOND:
+            return self.players_trade['P2']
         else:
             return self.player_turn
 
     def start_players_trade(self, player2):
-        if self.trades_offered_in_turn >= 3:
+        if self.trades_offered_in_turn <= 3:
             self.players_trade['P1'] = self.player_turn
             self.players_trade['P2'] = player2
             self.players_trade['R1'] = {}
@@ -758,15 +760,54 @@ class GameState:
             if resource_clicked in self.players_trade['R1']:
                 if self.players[self.player_turn].available_cards({resource_clicked: self.players_trade['R1'][resource_clicked] + 1}):
                     self.players_trade['R1'][resource_clicked] += 1
-                elif self.players[self.player_turn].available_cards({resource_clicked: 1}):
-                    self.players_trade['R1'][resource_clicked] = 1
+            elif self.players[self.player_turn].available_cards({resource_clicked: 1}):
+                self.players_trade['R1'][resource_clicked] = 1
+
+            self.log = "Offering: "
+            for name, resource in [("Sheep", config.SHEEP), ("Ore", config.ORE), ("Brick", config.BRICK), ("Wheat", config.WHEAT), ("Wood", config.WOOD)]:
+                if resource in self.players_trade['R1']:
+                    self.log = self.log + name + ": " + str(self.players_trade['R1'][resource]) + ", "
         
         elif self.game_phase == config.PHASE_TRADE_RECEIVE:
             if resource_clicked in self.players_trade['R2']:
                 if self.players[self.players_trade['P2']].available_cards({resource_clicked: self.players_trade['R2'][resource_clicked] + 1}):
                     self.players_trade['R2'][resource_clicked] += 1
-                elif self.players[self.players_trade['P2']].available_cards({resource_clicked: 1}):
-                    self.players_trade['R2'][resource_clicked] = 1
+            elif self.players[self.players_trade['P2']].available_cards({resource_clicked: 1}):
+                self.players_trade['R2'][resource_clicked] = 1
+
+            self.log = "Receiving: "
+            for name, resource in [("Sheep", config.SHEEP), ("Ore", config.ORE), ("Brick", config.BRICK), ("Wheat", config.WHEAT), ("Wood", config.WOOD)]:
+                if resource in self.players_trade['R2']:
+                    self.log = self.log + name + ": " + str(self.players_trade['R2'][resource]) + ", "
+    
+    def handle_move_trade_forward(self):
+        if self.game_phase == config.PHASE_TRADE_OFFER:
+            self.game_phase = config.PHASE_TRADE_RECEIVE
+            self.log = "Choose resources to receive"
+        elif self.game_phase == config.PHASE_TRADE_RECEIVE:
+            self.game_phase = config.PHASE_TRADE_RESPOND
+            self.log = "Player " + str(self.players_trade['P2'] + 1) + ": Respond to trade offer"
+
+    def handle_cancel_trade(self):
+        if self.game_phase in [config.PHASE_TRADE_OFFER, config.PHASE_TRADE_RECEIVE, config.PHASE_TRADE_RESPOND]:
+            self.initialise_trade()
+            self.game_phase = config.PHASE_WAIT
+            self.log = "Choose action"
+
+    def execute_players_trade(self):
+        self.players[self.players_trade['P1']].add_resources(self.players_trade['R2'])
+        self.players[self.players_trade['P1']].remove_resources(self.players_trade['R1'])
+        self.players[self.players_trade['P2']].add_resources(self.players_trade['R1'])
+        self.players[self.players_trade['P2']].remove_resources(self.players_trade['R2'])
+
+        self.add_resources_ai(self.players_trade['R2'], self.players_trade['P1'])
+        self.add_resources_ai(self.players_trade['R1'], self.players_trade['P2'])
+        self.remove_resources_ai(self.players_trade['R2'], self.players_trade['P2'])
+        self.remove_resources_ai(self.players_trade['R1'], self.players_trade['P1'])
+
+        self.initialise_trade()
+        self.game_phase = config.PHASE_WAIT
+        self.log = "Trade executed"
     
     def ai_get_moves(self):
         moves = []

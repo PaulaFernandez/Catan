@@ -31,7 +31,8 @@ class GameController:
                                   self.game.player_turn,
                                   self.game.log,
                                   self.game.dices,
-                                  self.game.players_to_discard[0][0] if len(self.game.players_to_discard) > 0 else None)
+                                  self.game.get_player_moving(),
+                                  self.game.game_phase)
 
     def click_in_vertex(self, pos):
         for _, vertices in config.tiles_vertex.items():
@@ -84,6 +85,12 @@ class GameController:
 
             if self.pos_in_rectangle(pos, config.buy_special_card_position[0], config.buy_special_card_position[1], config.buy_special_card_size[0], config.buy_special_card_size[1]):
                 return ('action', config.BUY_SPECIAL_CARD)
+
+            if self.pos_in_rectangle(pos, config.accept_trade_position[0], config.accept_trade_position[1], config.accept_trade_size[0], config.accept_trade_size[1]):
+                return ('action', config.ACCEPT_TRADE)
+
+            if self.pos_in_rectangle(pos, config.reject_trade_position[0], config.reject_trade_position[1], config.reject_trade_size[0], config.reject_trade_size[1]):
+                return ('action', config.REJECT_TRADE)
 
             for i, tile_pos in enumerate(config.tile_position):
                 if self.pos_in_rectangle(pos, tile_pos[0] + config.number_x_offset, tile_pos[1] + config.number_y_offset, config.numbers_size[0], config.numbers_size[1]):
@@ -192,10 +199,24 @@ class GameController:
             click = self.check_click(pos)
             if click[0] == 'card':
                 self.game.handle_resource_added_trade(click[1])
+            elif click == ('action', config.ACCEPT_TRADE):
+                self.game.handle_move_trade_forward()
+            elif click == ('action', config.REJECT_TRADE):
+                self.game.handle_cancel_trade()
         elif self.game.game_phase == config.PHASE_TRADE_RECEIVE:
             click = self.check_click(pos)
             if click[0] == 'card':
                 self.game.handle_resource_added_trade(click[1])
+            elif click == ('action', config.ACCEPT_TRADE):
+                self.game.handle_move_trade_forward()
+            elif click == ('action', config.REJECT_TRADE):
+                self.game.handle_cancel_trade()
+        elif self.game.game_phase == config.PHASE_TRADE_RESPOND:
+            click = self.check_click(pos)
+            if click == ('action', config.ACCEPT_TRADE):
+                self.game.execute_players_trade()
+            elif click == ('action', config.REJECT_TRADE):
+                self.game.handle_cancel_trade()
 
         if self.check_click(pos) == ('action', config.SAVE_GAME):
             with open('game.pkl', 'wb') as output:

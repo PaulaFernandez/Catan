@@ -294,7 +294,7 @@ class MCTS_AI:
         return node, prediction
 
     def build_nn_input(self, state, perspective, determined = 0):
-        nn_input = np.zeros((1, 70, 6, 11), dtype=np.float32)
+        nn_input = np.zeros((1, config.INPUT_DIM[0], config.INPUT_DIM[1], config.INPUT_DIM[2]), dtype=np.float32)
 
         # Resources
         for key, r in enumerate([config.SHEEP, config.ORE, config.BRICK, config.WHEAT, config.WOOD]):
@@ -392,6 +392,26 @@ class MCTS_AI:
             nn_input[0, 68, :, :] = 1
         if (state.game_phase == config.PHASE_INITIAL_SETTLEMENT or state.game_phase == config.PHASE_INITIAL_ROAD) and state.initial_phase_decrease == 1:
             nn_input[0, 69, :, :] = 1
+
+        # Player turn
+        for p in range(4):
+            p_order = (4 + p - perspective) % 4
+            if p == state.player_turn:
+                nn_input[0, 70 + p_order, :, :] = 1
+
+        # Other game phases
+        if state.game_phase == config.PHASE_THROW_DICE:
+            nn_input[0, 74, :, :] = 1
+        if state.game_phase == config.PHASE_MOVE_ROBBER:
+            nn_input[0, 75, :, :] = 1
+        if state.game_phase == config.PHASE_STEAL_CARD:
+            nn_input[0, 76, :, :] = 1
+        if state.game_phase == config.PHASE_ROAD_BUILDING:
+            nn_input[0, 77, :, :] = 1
+        if state.game_phase == config.PHASE_YEAR_OF_PLENTY:
+            nn_input[0, 78, :, :] = 1
+        if state.game_phase == config.PHASE_TRADE_RESPOND:
+            nn_input[0, 79, :, :] = 1
 
         return nn_input
     
