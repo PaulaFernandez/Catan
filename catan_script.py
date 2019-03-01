@@ -23,7 +23,6 @@ def play_game(agents_obj):
 
     game_memory.dump_to_file()
 
-config.WIN_POINTS = 3
 agents = [config.CURRENT_AGENT]
 games_played = 0
 agents_obj = {}

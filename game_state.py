@@ -129,8 +129,8 @@ class GameState:
                 elif p == player_id_give_card and self.players[p].ai != None:
                     self.players[p].ai.add_resources_rival(cards, player_id_get_card)
                 elif self.players[p].ai != None:
-                    self.players[p].ai.add_unknown_resource_rival(player_id_get_card)
-                    self.players[p].ai.remove_unknown_resource_rival(player_id_give_card)
+                    possible_cards = self.players[p].ai.remove_unknown_resource_rival(player_id_give_card)
+                    self.players[p].ai.add_unknown_resource_rival(player_id_get_card, cards_available = possible_cards)
 
     def add_special_card_ai(self, player_id):
         if self.ai_rollout == 0:
@@ -143,7 +143,6 @@ class GameState:
             for p in range(4):
                 if p != player_id and self.players[p].ai != None:
                     self.players[p].ai.remove_special_card_rival(player_id)
-
 
     def generate_numbers(self):
         numbers = config.roll_numbers
@@ -955,8 +954,11 @@ class GameState:
     def ai_get_result(self, player):
         if self.game_phase == config.PHASE_END_GAME:
             if self.winner == player:
-                return 1.0
+                if self.players[player].points(hidden = 0) >= 10:
+                    return 1.0
+                else:
+                    return 2.0 * (float(self.players[player].points(hidden = 0)) - 2) / 10.0 - 1.0
             else:
-                return (float(self.players[player].points(hidden = 1)) - 2) / 10.0 - 1.0
+                return 2.0 * (float(self.players[player].points(hidden = 0)) - 2) / 10.0 - 1.0
         else:
-            return (float(self.players[player].points(hidden = 1)) - 2) / 10.0 - 1.0
+            return 2.0 * (float(self.players[player].points(hidden = 0)) - 2) / 10.0 - 1.0

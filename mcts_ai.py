@@ -35,9 +35,9 @@ class Node:
     def add_probabilities(self, probs):
         self.move_probabilities = probs
         
-    def UCTSelectChild(self):
+    def UCTSelectChild(self, weight):
         def evaluation(x):
-            return x.Q + 0.2 * (x.prior_probabilities / 2.0 + 0.5) * sqrt(self.N / (0.01 + x.N))
+            return weight * x.Q + (1 - weight) * 0.2 * (x.prior_probabilities / 2.0 + 0.5) * sqrt(self.N / (0.01 + x.N))
 
         potential_moves = []
         
@@ -47,6 +47,17 @@ class Node:
         
         s = sorted(potential_moves, key = evaluation )
         return s[-1]
+    
+    def get_child_probs(self):
+        probs = []
+        for c in self.childNodes:
+            probs.append(c.N)
+        
+        probs = np.array(probs)
+        probs = np.power(probs, 1 / config.ETA)
+        probs = probs / np.sum(probs)
+        
+        return probs
     
     def update(self, result):
         self.N += 1
@@ -83,7 +94,7 @@ class Node:
         self.childNodes.append(n)
         self.child_moves.append(move)
         return n
-
+        
     def ChildrenToString(self):
         s = ""
         for c in self.childNodes:
@@ -91,7 +102,7 @@ class Node:
         return s
 
     def __repr__(self):
-        return "[M:" + str(self.move) + " Q/N:" + str(self.Q) + "/" + str(self.N) + "]"
+        return "[M:" + str(self.move) + " Q/N:" + str(self.Q) + "/" + str(self.N) + "] P: " + str(self.prior_probabilities)
 
 class Dice_Node(Node):
     def __init__(self, player, parent = None, prior_probs = 0.0):
@@ -224,6 +235,7 @@ class MCTS_AI:
 
     def remove_unknown_resource_rival(self, player_id):
         new_set = set()
+        cards_available = set()
         for cards in self.rivals_info[player_id]['cards']:
             for c in range(2, 7):
                 if cards[c - 2] >= 1:
@@ -231,12 +243,15 @@ class MCTS_AI:
                     cards_x[c - 2] -= 1
                     cards_x = tuple(cards_x)
                     new_set.add(cards_x)
+                    cards_available.add(c)
         self.rivals_info[player_id]['cards'] = new_set
+        
+        return cards_available
 
-    def add_unknown_resource_rival(self, player_id):
+    def add_unknown_resource_rival(self, player_id, cards_available = set([2,3,4,5,6])):
         new_set = set()
         for cards in self.rivals_info[player_id]['cards']:
-            for c in range(2, 7):
+            for c in cards_available:
                 cards_x = list(cards)
                 cards_x[c - 2] += 1
                 cards_x = tuple(cards_x)
@@ -249,7 +264,7 @@ class MCTS_AI:
     def remove_special_card_rival(self, player_id):
         self.rivals_info[player_id]['special_cards'] -= 1
     
-    def select(self, state, node):
+    def select(self, state, node, weight):
         while 1:
             if node.is_random:
                 node, evaluate = node.roll(state)
@@ -265,7 +280,7 @@ class MCTS_AI:
                 if expansion_nodes != [] or state.game_phase == config.PHASE_END_GAME:
                     return node, expansion_nodes
                 else:
-                    node = node.UCTSelectChild()
+                    node = node.UCTSelectChild(weight)
                     if node.move[0] != config.THROW_DICE and node.move[0] != config.BUY_SPECIAL_CARD and node.move[0] != config.STEAL_FROM_HOUSE:
                         state.ai_do_move(node.move)
                     
@@ -487,7 +502,7 @@ class MCTS_AI:
                     valid_determinization = True
             
             # Select
-            node, expansion_nodes = self.select(state, node)
+            node, expansion_nodes = self.select(state, node, (i / self.itermax) * (i / self.itermax))
             
             # Expand
             if expansion_nodes != []: # Otherwise this is a terminal Node
@@ -518,4 +533,9 @@ class MCTS_AI:
 
         posterior_probs = self.calc_posteriors(rootnode)
         
-        return sorted(rootnode.childNodes, key = lambda c: c.N)[-1].move, posterior_probs, start_network, rootstate.get_player_moving()
+        if config.DETERMINISTIC_PLAY is True:
+            move = sorted(rootnode.childNodes, key = lambda c: c.N)[-1].move
+        else:
+            move = np.random.choice(rootnode.childNodes, p = rootnode.get_child_probs()).move
+        print ("Move selected: " + str(move))
+        return move, posterior_probs, start_network, rootstate.get_player_moving()
