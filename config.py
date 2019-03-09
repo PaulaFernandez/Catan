@@ -8,29 +8,26 @@ player_is_human = {0: 0,
 main_color = (255, 255, 255)
 
 WIN_POINTS = 10
-MAX_MOVES = 125
+MAX_MOVES = 160
 
 # Neural Network
-ETA = 0.65
+DISABLE_PLAYERS_TRADES = True
+ETA = 0.2
 DETERMINISTIC_PLAY = False
-CURRENT_AGENT = 15
-SELF_PLAY_BATCH_SIZE = 100
+CURRENT_AGENT = [4, 5, 6, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39]
+SELF_PLAY_BATCH_SIZE = 44
 TRAIN_BATCH_SIZE = 256
-TRAINING_LOOPS = 35
+TRAINING_LOOPS = 100
 EPOCHS = 2
-MCTS_EXPLORATION = 35
+MCTS_EXPLORATION = 100
 MOMENTUM = 0.9
 REG_CONST = 0.0001
 LEARNING_RATE = 0.1
 INPUT_DIM = (80, 6, 11)
 OUTPUT_DIM = 941
 HIDDEN_CNN_LAYERS = [
-	{'filters':128, 'kernel_size': (3,3)}
-	 , {'filters':128, 'kernel_size': (3,3)}
-	 , {'filters':128, 'kernel_size': (3,3)}
-	 , {'filters':128, 'kernel_size': (3,3)}
-	 , {'filters':128, 'kernel_size': (3,3)}
-	 , {'filters':128, 'kernel_size': (3,3)}
+	{'filters':32, 'kernel_size': (3,3)}
+	 , {'filters':32, 'kernel_size': (3,3)}
 	]
 
 folder_self_play = 'games'

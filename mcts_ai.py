@@ -25,12 +25,15 @@ class Node:
         self.move_probabilities = []
         self.prior_probabilities = prior_probs
 
-    def move_index(self, move):
-        if move[0] != config.STEAL_FROM_HOUSE:
-            return config.available_moves.index(move)
-        else:
+    def move_index(self, move, player):
+        if move[0] == config.STEAL_FROM_HOUSE:
             p_order = (4 + move[1][1] - self.current_player) % 4
             return config.available_moves.index((move[0], (move[1][0], p_order)))
+        elif move[0] == config.TRADE_OFFER:
+            p_order = (4 + move[1] - player) % 4
+            return config.available_moves.index((move[0], p_order, move[2], move[3]))
+        else:
+            return config.available_moves.index(move)
         
     def add_probabilities(self, probs):
         self.move_probabilities = probs
@@ -79,7 +82,7 @@ class Node:
         return possible_expansion
     
     def add_child(self, player, move):
-        index_probs = self.move_index(move)
+        index_probs = self.move_index(move, player)
         if move[0] == config.THROW_DICE:
             n = Dice_Node(player, self, prior_probs = self.move_probabilities[index_probs])
         elif move[0] == config.BUY_SPECIAL_CARD:
@@ -194,9 +197,10 @@ class Buy_Card_Node(Node):
         return node
 
 class MCTS_AI:
-    def __init__(self, player_id, agent, itermax):
+    def __init__(self, player_id, agent, itermax, agent_name):
         self.itermax = itermax
         self.player_id = player_id
+        self.agent_name = agent_name
         self.rivals_info = {}
 
         self.nn = agent
@@ -468,7 +472,7 @@ class MCTS_AI:
         posteriors = np.zeros(config.OUTPUT_DIM)
 
         for n in rootnode.childNodes:
-            index_probs = n.move_index(n.move)
+            index_probs = n.move_index(n.move, self.player_id)
             posteriors[index_probs] = n.N / self.itermax
 
         return posteriors

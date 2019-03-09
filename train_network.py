@@ -2,12 +2,13 @@ import pickle
 from os import listdir
 from random import choice
 import numpy as np
+import sys
 
 from model import Residual_CNN
 import config
 
 net = Residual_CNN(config.REG_CONST, config.LEARNING_RATE, config.INPUT_DIM, config.OUTPUT_DIM, config.HIDDEN_CNN_LAYERS)
-net.read(config.CURRENT_AGENT)
+net.read(sys.argv[1])
 
 for i in range(config.TRAINING_LOOPS):
     print ("Iteration #" + str(i))
@@ -32,4 +33,4 @@ for i in range(config.TRAINING_LOOPS):
         
     net.fit(batch_states, batch_targets, config.EPOCHS, 2, 0.0, 32)
 
-net.write(config.CURRENT_AGENT + 1)
+net.write(sys.argv[2])

@@ -22,15 +22,23 @@ def play_game(agents_obj):
     game_memory.add_game_result(game_result)
 
     game_memory.dump_to_file()
+    
+    # Write result
+    with open('results.txt', 'a') as output:
+        players = []
+        for p in range(4):
+            players.append(game.players[p].ai.agent_name)
+            
+        output.write(repr(players) + ": " + str(game.winner) + "\n")
 
-agents = [config.CURRENT_AGENT]
+agents = config.CURRENT_AGENT
 games_played = 0
-agents_obj = {}
+agents_obj = []
 
 for a in agents:
     net = Residual_CNN(config.REG_CONST, config.LEARNING_RATE, config.INPUT_DIM, config.OUTPUT_DIM, config.HIDDEN_CNN_LAYERS)
     net.read(a)
-    agents_obj[str(a)] = net
+    agents_obj.append((str(a), net))
 
 while games_played < config.SELF_PLAY_BATCH_SIZE:
     try:

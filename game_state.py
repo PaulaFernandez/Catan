@@ -24,6 +24,7 @@ class GameState:
         self.resources_in_year_of_plenty = 0
         self.special_card_played_in_turn = 0
         self.trades_offered_in_turn = 0
+        self.trades_proposed = []
         self.winner = None
         self.ai_rollout = 0
         self.special_cards_played = []
@@ -38,7 +39,8 @@ class GameState:
             self.players.append(player.Player(i, config.player_is_human[i]))
 
             if config.player_is_human[i] == 0:
-                self.players[i].ai = MCTS_AI(i, agents_obj[str(config.CURRENT_AGENT)], config.MCTS_EXPLORATION)
+                selected_agent = choice(agents_obj)
+                self.players[i].ai = MCTS_AI(i, selected_agent[1], config.MCTS_EXPLORATION, selected_agent[0])
 
         self.max_road = {0: 1, 1: 1, 2: 1, 3: 1}
         
@@ -724,6 +726,8 @@ class GameState:
         self.special_card_played_in_turn = 0
         self.next_player()
         self.initialise_trade()
+        self.trades_offered_in_turn = 0
+        self.trades_proposed = []
         self.moves += 1
 
         if self.ai_rollout == 0:
@@ -742,7 +746,7 @@ class GameState:
             return self.player_turn
 
     def start_players_trade(self, player2):
-        if self.trades_offered_in_turn <= 3:
+        if self.trades_offered_in_turn < 1:
             self.players_trade['P1'] = self.player_turn
             self.players_trade['P2'] = player2
             self.players_trade['R1'] = {}
@@ -753,6 +757,16 @@ class GameState:
             self.log = "Select resources to offer"
         else:
             self.log = "You have offered too many deals this turn"
+            
+    def start_ai_trade(self, player2, resources_give, resources_receive):
+        if self.trades_offered_in_turn < 1:
+            self.players_trade['P1'] = self.player_turn
+            self.players_trade['P2'] = player2
+            self.players_trade['R1'] = {resources_give[0]: resources_give[1]}
+            self.players_trade['R2'] = {resources_receive[0]: resources_receive[1]}
+
+            self.trades_offered_in_turn +=1
+            self.game_phase = config.PHASE_TRADE_RESPOND
 
     def handle_resource_added_trade(self, resource_clicked):
         if self.game_phase == config.PHASE_TRADE_OFFER:
@@ -873,6 +887,20 @@ class GameState:
                     moves.append((config.PLAY_SPECIAL_CARD, config.ROAD_BUILDING))
                 if card == config.YEAR_OF_PLENTY and self.special_card_played_in_turn == 0:
                     moves.append((config.PLAY_SPECIAL_CARD, config.YEAR_OF_PLENTY))
+            # Trades
+            if config.DISABLE_PLAYERS_TRADES is False:
+                if self.trades_offered_in_turn < 1:
+                    for card_give in [config.BRICK, config.ORE, config.WHEAT, config.WOOD, config.SHEEP]:
+                        for num_cards_give in range(1, 3):
+                            if self.players[self.player_turn].available_cards({card_give: num_cards_give}):
+                                for p in range(4):
+                                    if p != self.player_turn:
+                                        for card_receive in [config.BRICK, config.ORE, config.WHEAT, config.WOOD, config.SHEEP]:
+                                            if card_give != card_receive:
+                                                for num_cards_receive in range(1, 3):
+                                                    if self.players[p].available_cards({card_receive: num_cards_receive}):
+                                                        if (config.TRADE_OFFER, p, (card_give, num_cards_give), (card_receive, num_cards_receive)) not in self.trades_proposed:
+                                                            moves.append((config.TRADE_OFFER, p, (card_give, num_cards_give), (card_receive, num_cards_receive)))
             # End Turn
             moves.append((config.CONTINUE_GAME,))
         elif self.game_phase == config.PHASE_MOVE_ROBBER:
@@ -893,6 +921,10 @@ class GameState:
         elif self.game_phase == config.PHASE_YEAR_OF_PLENTY:
             for key in config.card_types:
                 moves.append((config.RESOURCE_YEAR_PLENTY, key))
+        elif self.game_phase == config.PHASE_TRADE_RESPOND:
+            if self.players[self.players_trade['P2']].available_cards(self.players_trade['R2']):
+                moves.append((config.TRADE_RESPONSE, 1))
+            moves.append((config.TRADE_RESPONSE, 0))
 
         return moves
 
@@ -950,6 +982,14 @@ class GameState:
                 self.resources_in_year_of_plenty = 2
         elif move[0] == config.RESOURCE_YEAR_PLENTY:
             self.handle_play_year_of_plenty(move[1])
+        elif move[0] == config.TRADE_OFFER:
+            self.start_ai_trade(move[1], move[2], move[3])
+            self.trades_proposed.append(move)
+        elif move[0] == config.TRADE_RESPONSE:
+            if move[1] == 1:
+                self.execute_players_trade()
+            else:
+                self.handle_cancel_trade()
 
     def ai_get_result(self, player):
         if self.game_phase == config.PHASE_END_GAME:

@@ -85,7 +85,7 @@ class Residual_CNN(Gen_Model):
 
     def value_head(self, x):
         x = Conv2D(
-        filters = 2
+        filters = 4
         , kernel_size = (1,1)
         , data_format="channels_first"
         , padding = 'same'
@@ -100,7 +100,7 @@ class Residual_CNN(Gen_Model):
         x = Flatten()(x)
 
         x = Dense(
-            30
+            20
             , use_bias=False
             , activation='linear'
             , kernel_regularizer=regularizers.l2(self.reg_const)
@@ -120,7 +120,7 @@ class Residual_CNN(Gen_Model):
 
     def policy_head(self, x):
         x = Conv2D(
-        filters = 20
+        filters = 2
         , kernel_size = (1,1)
         , data_format="channels_first"
         , padding = 'same'
