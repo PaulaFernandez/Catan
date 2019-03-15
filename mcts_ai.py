@@ -49,7 +49,10 @@ class Node:
             potential_moves.append(n)
         
         s = sorted(potential_moves, key = evaluation )
-        return s[-1]
+        try:
+            return s[-1]
+        except:
+            raise Exception("No moves found. Move: " + str(self.move) + "; Possible_moves: " + str(self.possible_moves))
     
     def get_child_probs(self):
         probs = []
@@ -342,8 +345,8 @@ class MCTS_AI:
             for c in state.players[p].cities:
                 nn_input[0, 23 + 3 * p_order, config.vertex_to_nn_input[c][0], config.vertex_to_nn_input[c][1]] = 1
             for r in state.players[p].roads:
-                nn_input[0, 24 + 3 * p_order, config.vertex_to_nn_input[r[0]][0], config.vertex_to_nn_input[r[0]][1]] = 1
-                nn_input[0, 24 + 3 * p_order, config.vertex_to_nn_input[r[1]][0], config.vertex_to_nn_input[r[1]][1]] = 1
+                nn_input[0, 24 + 3 * p_order, config.vertex_to_nn_input[r[0]][0], config.vertex_to_nn_input[r[0]][1]] += 1
+                nn_input[0, 24 + 3 * p_order, config.vertex_to_nn_input[r[1]][0], config.vertex_to_nn_input[r[1]][1]] += 1
 
         # Own Cards
         for key, r in enumerate([config.SHEEP, config.ORE, config.BRICK, config.WHEAT, config.WOOD]):
@@ -452,12 +455,12 @@ class MCTS_AI:
         state.special_cards = deepcopy(config.special_cards_vector)
         for c in state.special_cards_played:
             try:
-                state.special_cards.pop(c)
+                state.special_cards.remove(c)
             except:
                 raise Exception("c: " + str(c) + ", special_cards: " + str(state.special_cards))
         for c in state.players[self.player_id].special_cards:
             try:
-                state.special_cards.pop(c)
+                state.special_cards.remove(c)
             except:
                 raise Exception("c: " + str(c) + ", special_cards: " + str(state.special_cards))
 

@@ -47,3 +47,4 @@ while games_played < config.SELF_PLAY_BATCH_SIZE:
     except Exception as e:
         with open('log.txt', 'a') as output:
             traceback.print_exc(file = output)
+            output.write("\n\n *****************************************************************\n")
