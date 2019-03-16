@@ -198,4 +198,23 @@ class DrawScreen:
 
         if dices != (0, 0):
             self.draw_big_dices(dices)
+
+    def draw_start(self):
+        self.draw(0, 0, 'img/background.jpg', (1400,900))
+        self.draw(config.menu_x_offset, config.menu_y_offset, config.start_image, config.menu_image_size, angle=0)
+        self.draw(config.menu_x_offset, config.menu_y_offset + config.menu_y_step, config.load_game_image, config.menu_image_size, angle=0)
+        self.draw(config.menu_x_offset, config.menu_y_offset + 2 * config.menu_y_step, config.options_image, config.menu_image_size, angle=0)
         
+    def draw_options(self, config_game):
+        self.draw(0, 0, 'img/background.jpg', (1400,900))
+
+        # MCTS Explore
+        self.draw(config.menu_x_offset, config.menu_y_offset, config.mcts_image, config.menu_image_size, angle=0)
+        self.draw(config.menu_x_offset + config.menu_image_size[0] + 20, config.menu_y_offset, config.minus_image, config.circle_image_size, angle=0)
+        self.draw(config.menu_x_offset + config.menu_image_size[0] + 200, config.menu_y_offset, config.plus_image, config.circle_image_size, angle=0)
+        self.screen.fill((255, 255, 255), rect = pygame.Rect(config.menu_x_offset + config.menu_image_size[0] + 110, config.menu_y_offset + 20, 70, 30))
+        mcts_explore_text = self.font.render(str(config_game['MCTS_EXPLORATION']), 1, (0, 0, 0))
+        self.screen.blit(mcts_explore_text, (config.menu_x_offset + config.menu_image_size[0] + 120, config.menu_y_offset + 25))
+
+        # Back
+        self.draw(config.menu_x_offset, config.menu_y_offset + 500, config.back_image, config.menu_image_size, angle=0)

@@ -1,6 +1,6 @@
 import math
 
-player_is_human = {0: 0,
+player_is_human = {0: 1,
                    1: 0,
                    2: 0,
                    3: 0}
@@ -13,13 +13,13 @@ MAX_MOVES = 160
 # Neural Network
 DISABLE_PLAYERS_TRADES = True
 ETA = 0.2
-DETERMINISTIC_PLAY = False
-CURRENT_AGENT = [31, 46, 49, 61, 62, 64, 65, 66, 67, 68, 69, 70, 71, 72, 74, 78, 83, 84, 85, 86, 87, 89, 90, 91, 92, 93, 94, 95, 96, 97]
-SELF_PLAY_BATCH_SIZE = 75
+DETERMINISTIC_PLAY = True
+CURRENT_AGENT = [66]
+SELF_PLAY_BATCH_SIZE = 44
 TRAIN_BATCH_SIZE = 256
 TRAINING_LOOPS = 200
 EPOCHS = 2
-MCTS_EXPLORATION = 150
+MCTS_EXPLORATION = 15000
 MOMENTUM = 0.9
 REG_CONST = 0.0001
 LEARNING_RATE = 0.1
@@ -401,3 +401,19 @@ for p in range(1, 4):
                         available_moves.append((TRADE_OFFER, p, (i, q), (j, l)))
 available_moves.append((TRADE_RESPONSE, 1))
 available_moves.append((TRADE_RESPONSE, 0))
+
+# Menu
+start_image = 'img/start_game.png'
+load_game_image = 'img/load_game.png'
+options_image = 'img/options.png'
+menu_image_size = (300, 75)
+menu_x_offset = 100
+menu_y_offset = 200
+menu_y_step = 100
+
+# Options
+mcts_image = 'img/mcts_explore.png'
+back_image = 'img/back.png'
+plus_image = 'img/plus.png'
+minus_image = 'img/minus.png'
+circle_image_size = (75, 75)

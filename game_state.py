@@ -6,7 +6,7 @@ import config
 from mcts_ai import MCTS_AI
 
 class GameState:
-    def __init__(self, agents_obj = None):
+    def __init__(self, agents_obj = None, game_config = None):
         self.uuid = uuid.uuid1()
         self.counter = 0
 
@@ -34,13 +34,18 @@ class GameState:
         # Robber initial position
         self.robber_tile = self.tiles.index(config.DESERT)
 
+        if game_config is None:
+            mcts_exploration = config.MCTS_EXPLORATION
+        else:
+            mcts_exploration = game_config['MCTS_EXPLORATION']
+
         self.players = []
         for i in range(4): # 4 players
             self.players.append(player.Player(i, config.player_is_human[i]))
 
             if config.player_is_human[i] == 0:
                 selected_agent = choice(agents_obj)
-                self.players[i].ai = MCTS_AI(i, selected_agent[1], config.MCTS_EXPLORATION, selected_agent[0])
+                self.players[i].ai = MCTS_AI(i, selected_agent[1], mcts_exploration, selected_agent[0])
 
         self.max_road = {0: 1, 1: 1, 2: 1, 3: 1}
         
