@@ -1,6 +1,6 @@
 import math
 
-player_is_human = {0: 1,
+player_is_human = {0: 0,
                    1: 0,
                    2: 0,
                    3: 0}
@@ -11,20 +11,27 @@ WIN_POINTS = 10
 MAX_MOVES = 160
 
 # Neural Network
-DISABLE_PLAYERS_TRADES = True
-ETA = 0.2
-DETERMINISTIC_PLAY = True
-CURRENT_AGENT = [66]
-SELF_PLAY_BATCH_SIZE = 44
+DISABLE_PLAYERS_TRADES = False
+ETA = 0.5
+DETERMINISTIC_PLAY = False
+CURRENT_AGENT = [(1, 2)]
+SELF_PLAY_BATCH_SIZE = 50
+VALIDATION_BATCH_SIZE = 1024
 TRAIN_BATCH_SIZE = 256
 TRAINING_LOOPS = 200
 EPOCHS = 2
-MCTS_EXPLORATION = 15000
+MCTS_EXPLORATION = 50
 MOMENTUM = 0.9
 REG_CONST = 0.0001
 LEARNING_RATE = 0.1
-INPUT_DIM = (80, 6, 11)
+
+INPUT_START_DIM = (49, 6, 11)
+INPUT_DIM = (100, 6, 11)
+
+# Start policy outputs
+OUTPUT_START_DIM = 198
 OUTPUT_DIM = 941
+
 HIDDEN_CNN_LAYERS = [
 	{'filters':32, 'kernel_size': (3,3)}
 	 , {'filters':32, 'kernel_size': (3,3)}
@@ -356,6 +363,15 @@ big_dice_x1 = 350
 big_dice_x2 = 650
 big_dice_y = 400
 big_dice_size = (299, 294)
+
+# Moves mapping start
+start_available_moves = []
+for s in range(54):
+    start_available_moves.append((BUILD_SETTLEMENT, s))
+for s in range(54):
+    for r in roads_from_settlement[s]:
+        if r[0] < r[1]:
+            start_available_moves.append((BUILD_ROAD, r))
 
 # Moves mapping
 available_moves = []

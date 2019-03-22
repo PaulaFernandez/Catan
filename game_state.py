@@ -260,6 +260,14 @@ class GameState:
                     self.players[self.player_turn].cards[self.tiles[tile]] += 1
                     self.add_resources_ai({self.tiles[tile]: 1}, self.player_turn)
 
+    def available_settlement_spot(self, vertex):
+        for player_x in self.players:
+            for settlement in player_x.settlements + player_x.cities:
+                if config.settlement_clash[(vertex, settlement)]:
+                    return False
+                
+        return True
+    
     def valid_settlement(self, vertex):
         def settlement_clash(vertex_1, vertex_2):
             return config.settlement_clash[(vertex_1, vertex_2)]
@@ -895,17 +903,18 @@ class GameState:
             # Trades
             if config.DISABLE_PLAYERS_TRADES is False:
                 if self.trades_offered_in_turn < 1:
-                    for card_give in [config.BRICK, config.ORE, config.WHEAT, config.WOOD, config.SHEEP]:
-                        for num_cards_give in range(1, 3):
-                            if self.players[self.player_turn].available_cards({card_give: num_cards_give}):
-                                for p in range(4):
-                                    if p != self.player_turn:
-                                        for card_receive in [config.BRICK, config.ORE, config.WHEAT, config.WOOD, config.SHEEP]:
-                                            if card_give != card_receive:
-                                                for num_cards_receive in range(1, 3):
-                                                    if self.players[p].available_cards({card_receive: num_cards_receive}):
-                                                        if (config.TRADE_OFFER, p, (card_give, num_cards_give), (card_receive, num_cards_receive)) not in self.trades_proposed:
-                                                            moves.append((config.TRADE_OFFER, p, (card_give, num_cards_give), (card_receive, num_cards_receive)))
+                    for action in config.resources.keys():
+                        marginal_card, cards_to_offer = self.players[self.player_turn].is_marginal(action)
+                        
+                        if marginal_card is not None:
+                            for card_give in cards_to_offer:
+                                for num_cards_give in range(1, 3):
+                                    if self.players[self.player_turn].available_cards({card_give: num_cards_give}):
+                                        for p in range(4):
+                                            if p != self.player_turn:
+                                                if self.players[p].available_cards({marginal_card: 1}):
+                                                    if (config.TRADE_OFFER, p, (card_give, num_cards_give), (marginal_card, 1)) not in self.trades_proposed:
+                                                        moves.append((config.TRADE_OFFER, p, (card_give, num_cards_give), (marginal_card, 1)))
             # End Turn
             moves.append((config.CONTINUE_GAME,))
         elif self.game_phase == config.PHASE_MOVE_ROBBER:
@@ -923,6 +932,10 @@ class GameState:
         elif self.game_phase == config.PHASE_ROAD_BUILDING:
             for r in self.valid_roads():
                 moves.append((config.BUILD_ROAD, r))
+                
+            # If there are no roads available to build
+            if moves == []:
+                moves.append((config.CONTINUE_GAME,))
         elif self.game_phase == config.PHASE_YEAR_OF_PLENTY:
             for key in config.card_types:
                 moves.append((config.RESOURCE_YEAR_PLENTY, key))

@@ -1,3 +1,5 @@
+from copy import deepcopy
+
 from game_state import GameState
 from game_memory import GameMemory
 import config
@@ -11,9 +13,10 @@ def play_game(agents_obj):
 
     while game.game_phase != config.PHASE_END_GAME:
         player_moving = game.get_player_moving()
-        move, posterior_probs, nn_state, player_moving = game.players[player_moving].ai.move(game)
+        move, posterior_probs, player_moving = game.players[player_moving].ai.move(game)
         if player_moving > -1:
-            game_memory.add_to_memory_states(player_moving, nn_state, posterior_probs)
+            save_game = deepcopy(game)
+            game_memory.add_to_memory_states(player_moving, save_game, posterior_probs)
         game.ai_do_move(move)
 
     game_result = []
@@ -36,8 +39,14 @@ games_played = 0
 agents_obj = []
 
 for a in agents:
-    net = Residual_CNN(config.REG_CONST, config.LEARNING_RATE, config.INPUT_DIM, config.OUTPUT_DIM, config.HIDDEN_CNN_LAYERS)
-    net.read(a)
+    net = []
+    
+    net.append(Residual_CNN(config.REG_CONST, config.LEARNING_RATE, config.INPUT_START_DIM, config.OUTPUT_START_DIM, config.HIDDEN_CNN_LAYERS))
+    net[0].read(a[0])
+    
+    net.append(Residual_CNN(config.REG_CONST, config.LEARNING_RATE, config.INPUT_DIM, config.OUTPUT_DIM, config.HIDDEN_CNN_LAYERS))
+    net[1].read(a[1])
+    
     agents_obj.append((str(a), net))
 
 while games_played < config.SELF_PLAY_BATCH_SIZE:

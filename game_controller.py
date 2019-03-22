@@ -149,7 +149,7 @@ class GameController:
             if self.game.players[self.game.get_player_moving()].is_human == 0:
                 if self.check_click(pos) == ('action', config.CONTINUE_GAME):
                     self.game.dices = (0, 0)
-                    move, _, _, _ = self.game.players[self.game.get_player_moving()].ai.move(self.game)
+                    move, _, _ = self.game.players[self.game.get_player_moving()].ai.move(self.game)
                     self.game.ai_do_move(move)
                     self.redraw()
                 return

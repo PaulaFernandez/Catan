@@ -8,8 +8,8 @@ class GameMemory():
         self.states = []
         self.game_results = []
     
-    def add_to_memory_states(self, player, nn_state, posterior_probs):
-        self.states.append((player, nn_state, posterior_probs))
+    def add_to_memory_states(self, player, state, posterior_probs):
+        self.states.append((player, state, posterior_probs))
     
     def add_game_result(self, result):
         for k, s in enumerate(self.states):

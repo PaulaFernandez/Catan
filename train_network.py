@@ -7,8 +7,12 @@ import sys
 from model import Residual_CNN
 import config
 
-net = Residual_CNN(config.REG_CONST, config.LEARNING_RATE, config.INPUT_DIM, config.OUTPUT_DIM, config.HIDDEN_CNN_LAYERS)
+net = Residual_CNN(config.REG_CONST, config.LEARNING_RATE, config.INPUT_START_DIM, config.OUTPUT_START_DIM, config.HIDDEN_CNN_LAYERS)
 net.read(sys.argv[1])
+
+with open('train_states\\validation.pkl', 'rb') as input_file:
+    validation = pickle.load(input_file)
+remove('train_states\\validation.pkl')
 
 for i in range(config.TRAINING_LOOPS):
     print ("Iteration #" + str(i))
@@ -37,6 +41,6 @@ for i in range(config.TRAINING_LOOPS):
     # batch_states = np.array(batch_states)
     # batch_targets = [np.array(batch_target_results), np.array(batch_target_probs)]
         
-    net.fit(game_memory['batch_states'], game_memory['batch_targets'], config.EPOCHS, 2, 0.0, 32)
+    net.fit(game_memory['batch_states'], game_memory['batch_targets'], config.EPOCHS, 2, 0.0, 32, (validation['batch_states'], validation['batch_targets']))
 
 net.write(sys.argv[2])

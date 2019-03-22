@@ -21,15 +21,6 @@ class Player():
         self.valid_roads = []
         self.current_trade = {}
         self.initialize_trade()
-
-    def __deepcopy__(self, memo):
-        cls = self.__class__
-        result = cls.__new__(cls)
-        memo[id(self)] = result
-        for k, v in self.__dict__.items():
-            if k != "ai":
-                setattr(result, k, deepcopy(v, memo))
-        return result
     
     def initialize_trade(self):
         self.current_trade = {'type': -1,
@@ -63,6 +54,28 @@ class Player():
                 return False
 
         return True
+        
+    def is_marginal(self, resource_type):
+        if self.available_resources(resource_type):
+            return None, None
+        
+        marginal = None
+        for resource, value in config.resources[resource_type].items():
+            if self.cards[resource] == value - 1 and marginal == None:
+                marginal = resource
+            elif self.cards[resource] < value and marginal != None:
+                return None, None
+            elif self.cards[resource] < value - 1:
+                return None, None
+                
+        cards_to_offer = []
+        for resource in [config.SHEEP, config.ORE, config.WHEAT, config.BRICK, config.WOOD]:
+            if resource not in config.resources[resource_type] and self.cards[resource] > 0:
+                cards_to_offer.append(resource)
+            elif resource in config.resources[resource_type] and self.cards[resource] > config.resources[resource_type][resource]:
+                cards_to_offer.append(resource)
+                
+        return marginal, cards_to_offer   
 
     def add_resources(self, resources):
         for resource, value in resources.items():

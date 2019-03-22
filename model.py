@@ -32,8 +32,8 @@ class Gen_Model():
     def predict(self, x):
         return self.model.predict(x)
 
-    def fit(self, states, targets, epochs, verbose, validation_split, batch_size):
-        return self.model.fit(states, targets, epochs=epochs, verbose=verbose, validation_split = validation_split, batch_size = batch_size)
+    def fit(self, states, targets, epochs, verbose, validation_split, batch_size, validation_data):
+        return self.model.fit(states, targets, epochs=epochs, verbose=verbose, validation_data = validation_data, validation_split = validation_split, batch_size = batch_size)
 
     def write(self, version):
         self.model.save_weights(config.folder_agents + '\\' + "{0:0>5}".format(version) + '.h5')
@@ -109,7 +109,7 @@ class Residual_CNN(Gen_Model):
         x = LeakyReLU()(x)
 
         x = Dense(
-            4
+            1
             , use_bias=False
             , activation='tanh'
             , kernel_regularizer=regularizers.l2(self.reg_const)
