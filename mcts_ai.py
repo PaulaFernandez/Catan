@@ -1,11 +1,8 @@
-from math import sqrt, log
+from math import sqrt
 from copy import deepcopy
-from random import shuffle, choice, sample
+from random import shuffle, choice
 import config
-import pickle
 import numpy as np
-
-from model import Residual_CNN
 
 class Node:
     """ A node in the game tree. Note wins is always from the viewpoint of player_turn.
@@ -107,7 +104,7 @@ class Node:
     def ChildrenToString(self):
         s = ""
         for c in self.childNodes:
-             s += str(c) + "\n"
+            s += str(c) + "\n"
         return s
 
     def __repr__(self):
@@ -223,9 +220,21 @@ class MCTS_AI:
         result = cls.__new__(cls)
         memo[id(self)] = result
         for k, v in self.__dict__.items():
-            if k not in ["nn", "nn_start"]:
+            if k not in ["nn", "nn_start", "rootnode"]:
                 setattr(result, k, deepcopy(v, memo))
         return result
+    
+    def descend_tree(self, move):
+        #if self.rootnode is not None:
+        #    for n in self.rootnode.childNodes:
+        #        if n.move == move:
+        #            self.rootnode = n
+        #            return
+                
+        self.rootnode = None
+        
+    def remove_tree(self):
+        self.rootnode = None
         
     def add_resources_rival(self, cards_taken, player_id):
         for key, value in cards_taken.items():
@@ -563,24 +572,29 @@ class MCTS_AI:
         return posteriors
     
     def move(self, rootstate):
-        rootnode = Node(rootstate.get_player_moving())
+        iterations_done = 0
         
-        if len(rootnode.get_possible_moves(rootstate)) == 1:
+        if self.rootnode is None:
+            self.rootnode = Node(rootstate.get_player_moving())
+        else:
+            iterations_done = self.rootnode.N
+        
+        if len(self.rootnode.get_possible_moves(rootstate)) == 1:
             print (rootstate.get_player_moving())
-            print (rootnode.possible_moves[0])
-            return rootnode.possible_moves[0], 0, rootstate.get_player_moving()
+            print (self.rootnode.possible_moves[0])
+            return self.rootnode.possible_moves[0], 0, rootstate.get_player_moving()
         
-        start_network = self.build_nn_input(rootstate, rootnode.current_player, determined = 0)
+        start_network = self.build_nn_input(rootstate, self.rootnode.current_player, determined = 0)
         start_prediction = self.predict(start_network)
-        rootnode.add_probabilities(start_prediction[1][0])
+        self.rootnode.add_probabilities(start_prediction[1][0])
         print(rootstate.get_player_moving())
         print(start_prediction[0])
         
-        for i in range(self.itermax):
+        for i in range(iterations_done - 1, self.itermax):
             valid_determinization = False
             
             while valid_determinization is False:
-                node = rootnode
+                node = self.rootnode
                 state = deepcopy(rootstate)
                 state.ai_rollout = 1
 
@@ -619,24 +633,24 @@ class MCTS_AI:
                 node = node.parentNode
                 
             if config.DETERMINISTIC_PLAY is True and i > self.itermax / 2.0:
-                s_children = sorted(rootnode.childNodes, key = lambda c: c.N)
+                s_children = sorted(self.rootnode.childNodes, key = lambda c: c.N)
                 
                 if s_children[-1].N > s_children[-2].N + self.itermax - i:
                     move = s_children[-1].move
                     
-                    print (rootnode.ChildrenToString())
-                    posterior_probs = self.calc_posteriors(rootnode, rootstate)
+                    print (self.rootnode.ChildrenToString())
+                    posterior_probs = self.calc_posteriors(self.rootnode, rootstate)
                     
                     print ("Move selected: " + str(move))
                     return move, posterior_probs, rootstate.get_player_moving()
                 
-        print (rootnode.ChildrenToString())
+        print (self.rootnode.ChildrenToString())
 
-        posterior_probs = self.calc_posteriors(rootnode, rootstate)
+        posterior_probs = self.calc_posteriors(self.rootnode, rootstate)
         
         if config.DETERMINISTIC_PLAY is True:
-            move = sorted(rootnode.childNodes, key = lambda c: c.N)[-1].move
+            move = sorted(self.rootnode.childNodes, key = lambda c: c.N)[-1].move
         else:
-            move = np.random.choice(rootnode.childNodes, p = rootnode.get_child_probs()).move
+            move = np.random.choice(self.rootnode.childNodes, p = self.rootnode.get_child_probs()).move
         print ("Move selected: " + str(move))
         return move, posterior_probs, rootstate.get_player_moving()

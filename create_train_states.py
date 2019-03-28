@@ -5,9 +5,11 @@ import numpy as np
 
 import config
 
+val_states_per_loop = 2
+val_number_of_sets = 2
 states_per_loop = 4
-number_of_sets = 400
-training = 'start' #'start', 'general'
+number_of_sets = 100
+training = 'general' #'start', 'general'
 training_head = 'value' #'value', 'policy'
 num_states_start = 16    
 
@@ -28,7 +30,7 @@ def create_sets(type, batch_size, i, states_per_loop):
         if training == 'start':
             move_num = np.random.randint(num_states_start, size = states_per_loop)
         else:
-            move_num = np.random.randint(len(game_memory.game_results) - num_states_start, size = states_per_loop)
+            move_num = np.random.randint(num_states_start, len(game_memory.game_results), size = states_per_loop)
             
         for j in range(states_per_loop):
             if training_head == 'value':
@@ -44,7 +46,15 @@ def create_sets(type, batch_size, i, states_per_loop):
             p_order = (4 + perspective - game_memory.states[move_num[j]][0]) % 4
             
             states[j]['states'].append(nn[0])
-            states[j]['target_probs'].append(game_memory.states[move_num[j]][2])
+            
+            if training == 'start':
+                states[j]['target_probs'].append(game_memory.states[move_num[j]][2])
+            else:
+                if isinstance(game_memory.states[move_num[j]][2], int) < config.OUTPUT_DIM:
+                    states[j]['target_probs'].append([0] * config.OUTPUT_DIM)
+                else:
+                    states[j]['target_probs'].append(game_memory.states[move_num[j]][2])
+                             
             states[j]['target_results'].append([game_memory.game_results[move_num[j]][p_order]])
     
     for j in range(states_per_loop):    
@@ -56,12 +66,14 @@ def create_sets(type, batch_size, i, states_per_loop):
             with open('train_states\\states' + str(states_per_loop * i + j) + '.pkl', 'wb') as output_file:
                 pickle.dump(file_output, output_file, -1)
         else:
-            with open('train_states\\validation.pkl', 'wb') as output_file:
+            with open('validation_states\\states' + str(states_per_loop * i + j) + '.pkl', 'wb') as output_file:
                 pickle.dump(file_output, output_file, -1)
             
 
 # Validation
-create_sets('validation', config.VALIDATION_BATCH_SIZE, 0, 1)
+for i in range(val_number_of_sets):
+    print ("Validation Iteration #" + str(i))
+    create_sets('validation', config.VALIDATION_BATCH_SIZE, i, val_states_per_loop)
 
 # Training
 for i in range(number_of_sets):

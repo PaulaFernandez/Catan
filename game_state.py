@@ -742,8 +742,10 @@ class GameState:
         self.trades_offered_in_turn = 0
         self.trades_proposed = []
         self.moves += 1
-
+        
         if self.ai_rollout == 0:
+            self.remove_ai_trees()
+            
             print("Moves: " + str(self.moves))
             for p in range(4):
                 print("Player " + str(p) + ": " + str(self.players[p].points(hidden=0)) + " points")
@@ -1008,7 +1010,20 @@ class GameState:
                 self.execute_players_trade()
             else:
                 self.handle_cancel_trade()
+              
+        if self.ai_rollout == 0:  
+            self.descend_trees(move)
 
+    def descend_trees(self, move):
+        for p in self.players:
+            if p.ai is not None:
+                p.ai.descend_tree(move)
+    
+    def remove_ai_trees(self):
+        for p in self.players:
+            if p.ai is not None:
+                p.ai.remove_tree()
+    
     def ai_get_result(self, player):
         if self.game_phase == config.PHASE_END_GAME:
             if self.winner == player:
