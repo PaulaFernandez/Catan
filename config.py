@@ -9,16 +9,13 @@ main_color = (255, 255, 255)
 
 WIN_POINTS = 10
 MAX_MOVES = 160
+TYPE_OF_GAME = 0 # 0: Computer/ 1: Boardgame
 
 # Neural Network
 DISABLE_PLAYERS_TRADES = False
 ETA = 0.2
-DETERMINISTIC_PLAY = False
-CURRENT_AGENT = [(24, 28), (25, 29), 
-                 (31, 35), (32, 36), (33, 37), (34, 38),
-                 (48, 52), (49, 53), (50, 54),
-                 (55, 59), (56, 60), (57, 61), (58, 62),
-                 (63, 67), (64, 68), (65, 69), (66, 70)]
+DETERMINISTIC_PLAY = True
+CURRENT_AGENT = [(57, 61)]
 SELF_PLAY_BATCH_SIZE = 85
 VALIDATION_BATCH_SIZE = 1024
 TRAIN_BATCH_SIZE = 256
@@ -427,13 +424,25 @@ start_image = 'img/start_game.png'
 load_game_image = 'img/load_game.png'
 options_image = 'img/options.png'
 menu_image_size = (300, 75)
-menu_x_offset = 100
+menu_x_offset = 75
+menu_x_offset_col2 = 700
 menu_y_offset = 200
 menu_y_step = 100
 
 # Options
 mcts_image = 'img/mcts_explore.png'
+game_type_image = 'img/game_type.png'
 back_image = 'img/back.png'
 plus_image = 'img/plus.png'
 minus_image = 'img/minus.png'
+player_image = ['img/p1_options.png', 'img/p2_options.png', 'img/p3_options.png', 'img/p4_options.png']
 circle_image_size = (75, 75)
+
+# Configure
+available_tiles_x_offset = 50
+available_tiles_y_offset = 735
+available_tiles_gap = 150
+available_numbers_gap = 75
+
+# Boardgame
+dice_step = 60

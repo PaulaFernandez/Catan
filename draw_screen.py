@@ -199,6 +199,12 @@ class DrawScreen:
         if dices != (0, 0):
             self.draw_big_dices(dices)
 
+    def draw_dice_options(self):
+        self.draw(0, 0, 'img/background.jpg', (1400,900))
+        for i, dice in enumerate([(1, 1), (1, 2), (1, 3), (1, 4), (1, 5), (1, 6), (2, 6), (3, 6), (4, 6), (5, 6), (6, 6)]):
+            self.draw(config.menu_x_offset, config.menu_y_offset + i * config.dice_step, 'img/dice' + str(dice[0]) + '.png', config.ports_size, angle=0)
+            self.draw(config.menu_x_offset + 50, config.menu_y_offset + i * config.dice_step, 'img/dice' + str(dice[1]) + '.png', config.ports_size, angle=0)
+
     def draw_start(self):
         self.draw(0, 0, 'img/background.jpg', (1400,900))
         self.draw(config.menu_x_offset, config.menu_y_offset, config.start_image, config.menu_image_size, angle=0)
@@ -216,5 +222,49 @@ class DrawScreen:
         mcts_explore_text = self.font.render(str(config_game['MCTS_EXPLORATION']), 1, (0, 0, 0))
         self.screen.blit(mcts_explore_text, (config.menu_x_offset + config.menu_image_size[0] + 120, config.menu_y_offset + 25))
 
+        # Type of Game
+        self.draw(config.menu_x_offset, config.menu_y_offset + config.menu_y_step, config.game_type_image, config.menu_image_size, angle=0)
+        self.draw(config.menu_x_offset + config.menu_image_size[0] + 20, config.menu_y_offset + config.menu_y_step, config.minus_image, config.circle_image_size, angle=0)
+        self.draw(config.menu_x_offset + config.menu_image_size[0] + 270, config.menu_y_offset + config.menu_y_step, config.plus_image, config.circle_image_size, angle=0)
+        self.screen.fill((255, 255, 255), rect = pygame.Rect(config.menu_x_offset + config.menu_image_size[0] + 110, config.menu_y_offset + config.menu_y_step + 20, 140, 30))
+        game_type = "COMPUTER" if config_game['TYPE_OF_GAME'] == 0 else "BOARD"
+        game_type_text = self.font.render(game_type, 1, (0, 0, 0))
+        self.screen.blit(game_type_text, (config.menu_x_offset + config.menu_image_size[0] + 120, config.menu_y_offset + config.menu_y_step + 25))
+
+        # Players
+        for p in range(4):
+            self.draw(config.menu_x_offset_col2, config.menu_y_offset + p * config.menu_y_step, config.player_image[p], config.menu_image_size, angle=0)
+            self.draw(config.menu_x_offset_col2 + config.menu_image_size[0] + 20, config.menu_y_offset + p * config.menu_y_step, config.minus_image, config.circle_image_size, angle=0)
+            self.draw(config.menu_x_offset_col2 + config.menu_image_size[0] + 200, config.menu_y_offset + p * config.menu_y_step, config.plus_image, config.circle_image_size, angle=0)
+            self.screen.fill((255, 255, 255), rect = pygame.Rect(config.menu_x_offset_col2 + config.menu_image_size[0] + 110, config.menu_y_offset + p * config.menu_y_step + 20, 90, 30))
+            human_cpu = "CPU" if config_game['PLAYER_IS_HUMAN'][p] == 0 else "HUMAN"
+            player_text = self.font.render(human_cpu, 1, (0, 0, 0))
+            self.screen.blit(player_text, (config.menu_x_offset_col2 + config.menu_image_size[0] + 120, config.menu_y_offset + p * config.menu_y_step + 25))
+
         # Back
         self.draw(config.menu_x_offset, config.menu_y_offset + 500, config.back_image, config.menu_image_size, angle=0)
+        
+    def draw_configure(self, config_game, state):
+        self.screen.fill((0, 0, 0))
+
+        self.draw_tiles(config_game['tiles'])
+        self.draw_numbers(config_game['tiles'], config_game['numbers'])
+        self.draw_ports(config_game['ports'])
+
+        # Paint tiles available
+        if state == 3:
+            for tile in [config.SHEEP, config.ORE, config.BRICK, config.WHEAT, config.WOOD]:
+                if tile in config_game['available_tiles']:
+                    self.draw(config.available_tiles_x_offset + (tile - 2) * config.available_tiles_gap, config.available_tiles_y_offset, config.tile_types[tile]['img'], config.tiles_size)
+
+        # Paint numbers available
+        if state == 4:
+            for i, number in enumerate([2, 3, 4, 5, 6, 8, 9, 10, 11, 12]):
+                if number in config_game['available_numbers']:
+                    self.draw(config.available_tiles_x_offset + i * config.available_numbers_gap, config.available_tiles_y_offset, 'img/number_' + str(number) + '.png', config.numbers_size)
+
+        # Paint ports available
+        if state == 5:
+            for i, port in enumerate(config.card_types.keys()):
+                if port in config_game['available_ports']:
+                    self.draw(config.available_tiles_x_offset + i * config.available_numbers_gap, config.available_tiles_y_offset, config.port_types[port]['img'], config.ports_size)

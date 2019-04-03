@@ -7,7 +7,9 @@ from model import Residual_CNN
 class GameController:
     def __init__(self):
         self.controller_state = 0
-        self.config_game = {'MCTS_EXPLORATION': config.MCTS_EXPLORATION}
+        self.config_game = {'MCTS_EXPLORATION': config.MCTS_EXPLORATION,
+                            'TYPE_OF_GAME': config.TYPE_OF_GAME,
+                            'PLAYER_IS_HUMAN': config.player_is_human}
 
         self.draw_tool = DrawScreen()
         self.redraw()
@@ -17,13 +19,48 @@ class GameController:
         agents_obj = []
 
         for a in agents:
-            net = Residual_CNN(config.REG_CONST, config.LEARNING_RATE, config.INPUT_DIM, config.OUTPUT_DIM, config.HIDDEN_CNN_LAYERS)
-            net.read(a)
+            net = [Residual_CNN(config.REG_CONST, config.LEARNING_RATE, config.INPUT_START_DIM, config.OUTPUT_START_DIM, config.HIDDEN_CNN_LAYERS),
+                   Residual_CNN(config.REG_CONST, config.LEARNING_RATE, config.INPUT_DIM, config.OUTPUT_DIM, config.HIDDEN_CNN_LAYERS)]
+            net[0].read(a[0])
+            net[1].read(a[1])
             agents_obj.append((str(a), net))
 
         self.game = GameState(agents_obj = agents_obj, game_config = self.config_game)
         self.redraw()
         self.controller_state = 1
+
+    def check_state(self):
+        try:
+            if self.game.boardgame_state == 1:
+                if self.game.game_phase == config.PHASE_THROW_DICE:
+                    self.controller_state = 10
+                    self.game.boardgame_state = 0
+        except:
+            pass
+
+    def configure_game(self):
+        self.controller_state = 3
+        self.av_tile_selected = None
+        self.av_num_selected = None
+        self.av_port_selected = None
+
+        self.config_game['tiles'] = []
+        self.config_game['numbers'] = []
+        self.config_game['ports'] = [config.GENERIC for i in config.ports_vertex.keys()]
+        
+        for i in range(37):
+            if i in config.water_tiles:
+                self.config_game['tiles'].append(config.WATER)
+                continue
+            self.config_game['tiles'].append(config.DESERT)
+
+        self.config_game['available_tiles'] = []
+        for key, value in config.tile_types.items():
+            if key != config.WATER:
+                self.config_game['available_tiles'].extend([key] * value['number'])
+
+        self.config_game['available_numbers'] = config.roll_numbers
+        self.config_game['available_ports'] = [*config.card_types]
 
     @staticmethod
     def pos_in_rectangle(pos, x, y, width, height):
@@ -45,6 +82,10 @@ class GameController:
             self.draw_tool.draw_start()
         elif self.controller_state == 2:
             self.draw_tool.draw_options(self.config_game)
+        elif self.controller_state in [3, 4, 5]:
+            self.draw_tool.draw_configure(self.config_game, self.controller_state)
+        elif self.controller_state == 10:
+            self.draw_tool.draw_dice_options()
 
     def click_in_vertex(self, pos):
         for _, vertices in config.tiles_vertex.items():
@@ -123,23 +164,117 @@ class GameController:
             return 'increase_mcts'
         if self.pos_in_rectangle(pos, config.menu_x_offset + config.menu_image_size[0] + 20, config.menu_y_offset, config.circle_image_size[0], config.circle_image_size[1]):
             return 'decrease_mcts'
+        if self.pos_in_rectangle(pos, config.menu_x_offset + config.menu_image_size[0] + 270, config.menu_y_offset + config.menu_y_step, config.circle_image_size[0], config.circle_image_size[1]):
+            return 'increase_game_type'
+        if self.pos_in_rectangle(pos, config.menu_x_offset + config.menu_image_size[0] + 20, config.menu_y_offset + config.menu_y_step, config.circle_image_size[0], config.circle_image_size[1]):
+            return 'decrease_game_type'
         if self.pos_in_rectangle(pos, config.menu_x_offset, config.menu_y_offset + 500, config.menu_image_size[0], config.menu_image_size[1]):
             return 'back'
+
+        for p in range(4):
+            if self.pos_in_rectangle(pos, config.menu_x_offset_col2 + config.menu_image_size[0] + 20, config.menu_y_offset + p * config.menu_y_step, config.circle_image_size[0], config.circle_image_size[1]):
+                return ('player', p)
+            if self.pos_in_rectangle(pos, config.menu_x_offset_col2 + config.menu_image_size[0] + 200, config.menu_y_offset + p * config.menu_y_step, config.circle_image_size[0], config.circle_image_size[1]):
+                return ('player', p)
+
+    def check_click_configure(self, pos):
+        if self.controller_state == 3:
+            for av_tile in config.card_types.keys():
+                if self.pos_in_rectangle(pos, config.available_tiles_x_offset + (av_tile - 2) * config.available_tiles_gap, config.available_tiles_y_offset, config.tiles_size[0], config.tiles_size[1]):
+                    return('av_tile', av_tile)
+        elif self.controller_state == 4:
+            for i, number in enumerate([2, 3, 4, 5, 6, 8, 9, 10, 11, 12]):
+                if self.pos_in_rectangle(pos, config.available_tiles_x_offset + i * config.available_numbers_gap, config.available_tiles_y_offset, config.numbers_size[0], config.numbers_size[1]):
+                    return('av_num', number)
+        elif self.controller_state == 5:
+            for av_port in config.card_types.keys():
+                if self.pos_in_rectangle(pos, config.available_tiles_x_offset + (av_port - 2) * config.available_numbers_gap, config.available_tiles_y_offset, config.ports_size[0], config.ports_size[1]):
+                    return('av_port', av_port)
+            click_port = self.click_in_port(pos)
+            if click_port[0] == 'port':
+                return click_port
+
+        for i, tile_pos in enumerate(config.tile_position):
+            if self.pos_in_rectangle(pos, tile_pos[0] + config.number_x_offset, tile_pos[1] + config.number_y_offset, config.numbers_size[0], config.numbers_size[1]):
+                return ('tile', i)
+
+        return None
+
+    def check_click_dice(self, pos):
+        for i in range(2, 13):
+            if self.pos_in_rectangle(pos, config.menu_x_offset, config.menu_y_offset + (i - 2) * config.dice_step, 2 * config.ports_size[0], config.ports_size[1]):
+                return i
+
+        return None
 
     def handle_mouse_button_down(self, pos, button):
         if self.controller_state == 0:
             if self.check_click_menu(pos) == 'start_game':
-                self.start_game()
+                if self.config_game['TYPE_OF_GAME'] == 0:
+                    self.start_game()
+                elif self.config_game['TYPE_OF_GAME'] == 1:
+                    #self.configure_game()
+                    self.start_game()
             elif self.check_click_menu(pos) == 'options':
                 self.controller_state = 2
-        if self.controller_state == 2:
-            if self.check_click_options(pos) == 'increase_mcts':
+
+        elif self.controller_state == 2:
+            pos_clicked = self.check_click_options(pos)
+            if pos_clicked == 'increase_mcts':
                 self.config_game['MCTS_EXPLORATION'] += 50
-            elif self.check_click_options(pos) == 'decrease_mcts':
+            elif pos_clicked == 'decrease_mcts':
                 self.config_game['MCTS_EXPLORATION'] -= 50
-            elif self.check_click_options(pos) == 'back':
+            elif pos_clicked in ['increase_game_type', 'decrease_game_type']:
+                self.config_game['TYPE_OF_GAME'] = (self.config_game['TYPE_OF_GAME'] + 1) % 2
+            elif pos_clicked == 'back':
                 self.controller_state = 0
-        if self.controller_state == 1:
+            elif isinstance(pos_clicked, tuple):
+                if pos_clicked[0] == 'player':
+                    self.config_game['PLAYER_IS_HUMAN'][pos_clicked[1]] = (self.config_game['PLAYER_IS_HUMAN'][pos_clicked[1]] + 1) % 2
+
+        elif self.controller_state == 3:
+            click_action = self.check_click_configure(pos)
+            if click_action is not None:
+                if click_action[0] == 'av_tile':
+                    self.av_tile_selected = click_action[1]
+                if click_action[0] == 'tile' and self.av_tile_selected is not None:
+                    self.config_game['tiles'][click_action[1]] = self.av_tile_selected
+                    self.config_game['available_tiles'].remove(self.av_tile_selected)
+                    self.av_tile_selected = None
+                    if self.config_game['available_tiles'] == [1]:
+                        self.controller_state = 4
+
+        elif self.controller_state == 4:
+            click_action = self.check_click_configure(pos)
+            if click_action is not None:
+                if click_action[0] == 'av_num':
+                    self.av_num_selected = click_action[1]
+                if click_action[0] == 'tile' and self.av_num_selected is not None:
+                    self.config_game['numbers'].append( (self.av_num_selected, click_action[1]) )
+                    self.config_game['available_numbers'].remove(self.av_num_selected)
+                    self.av_num_selected = None
+                    if self.config_game['available_numbers'] == []:
+                        self.controller_state = 5
+
+        elif self.controller_state == 5:
+            click_action = self.check_click_configure(pos)
+            if click_action is not None:
+                if click_action[0] == 'av_port':
+                    self.av_port_selected = click_action[1]
+                if click_action[0] == 'port' and self.av_port_selected is not None:
+                    self.config_game['ports'][click_action[1]] = self.av_port_selected
+                    self.config_game['available_ports'].remove(self.av_port_selected)
+                    self.av_port_selected = None
+                    if self.config_game['available_ports'] == []:
+                        self.start_game()
+
+        elif self.controller_state == 10:
+            click_action = self.check_click_dice(pos)
+            if click_action is not None:
+                self.game.execute_dice_result(click_action)
+                self.controller_state = 1
+
+        elif self.controller_state == 1:
             if self.game.current_action == config.THROW_DICE:
                 self.game.current_action = -1
                 self.game.dices = (0, 0)

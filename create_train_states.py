@@ -39,9 +39,9 @@ def create_sets(type, batch_size, i, states_per_loop):
                 perspective = game_memory.states[move_num[j]][0]
                 
             if training == 'start':
-                nn = game_memory.states[move_num[j]][1].players[perspective].ai.build_start_nn_input(game_memory.states[move_num[j]][1], perspective)
+                nn = game_memory.states[move_num[j]][1].players[perspective].ai.build_start_nn_input(game_memory.states[move_num[j]][1], perspective, determined = 1)
             else:
-                nn = game_memory.states[move_num[j]][1].players[perspective].ai.build_nn_input(game_memory.states[move_num[j]][1], perspective)
+                nn = game_memory.states[move_num[j]][1].players[perspective].ai.build_nn_input(game_memory.states[move_num[j]][1], perspective, determined = 1)
             
             p_order = (4 + perspective - game_memory.states[move_num[j]][0]) % 4
             

@@ -10,9 +10,14 @@ class GameState:
         self.uuid = uuid.uuid1()
         self.counter = 0
 
-        self.tiles = self.generate_tiles()
-        self.numbers = self.generate_numbers()
-        self.ports = self.generate_ports()
+        if 'tiles' in game_config:
+            self.tiles = game_config['tiles']
+            self.numbers = game_config['numbers']
+            self.ports = game_config['ports']
+        else:
+            self.tiles = self.generate_tiles()
+            self.numbers = self.generate_numbers()
+            self.ports = self.generate_ports()
         self.special_cards = self.generate_special_cards()
         self.current_action = -1
         self.initial_phase_settlement = 0
@@ -30,6 +35,9 @@ class GameState:
         self.special_cards_played = []
         self.dice_thrown = 0
         self.moves = 0
+
+        self.type_game = game_config['TYPE_OF_GAME']
+        self.boardgame_state = 0
 
         # Robber initial position
         self.robber_tile = self.tiles.index(config.DESERT)
@@ -225,6 +233,10 @@ class GameState:
                 self.add_resources_ai(resources, player_id)
 
     def calculate_throw_dice(self):
+        if self.ai_rollout == 0 and self.type_game == 1:
+            self.boardgame_state = 1
+            return
+
         dice_1 = choice([1, 2, 3, 4, 5, 6])
         dice_2 = choice([1, 2, 3, 4, 5, 6])
         self.dices = (dice_1, dice_2)

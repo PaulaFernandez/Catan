@@ -17,5 +17,7 @@ while 1:
         elif event.type == pygame.MOUSEBUTTONUP:
             game_controller.handle_mouse_button_up(event.pos, event.button)
 
+    game_controller.check_state()
+
     time = clock.tick(15)
     pygame.display.update()
