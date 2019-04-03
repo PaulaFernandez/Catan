@@ -7,8 +7,8 @@ import config
 
 val_states_per_loop = 2
 val_number_of_sets = 2
-states_per_loop = 4
-number_of_sets = 100
+states_per_loop = 5
+number_of_sets = 120
 training = 'general' #'start', 'general'
 training_head = 'value' #'value', 'policy'
 num_states_start = 16    

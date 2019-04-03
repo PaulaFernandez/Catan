@@ -225,11 +225,11 @@ class MCTS_AI:
         return result
     
     def descend_tree(self, move):
-        #if self.rootnode is not None:
-        #    for n in self.rootnode.childNodes:
-        #        if n.move == move:
-        #            self.rootnode = n
-        #            return
+        # if self.rootnode is not None:
+            # for n in self.rootnode.childNodes:
+                # if n.move == move:
+                    # self.rootnode = n
+                    # return
                 
         self.rootnode = None
         
@@ -553,6 +553,7 @@ class MCTS_AI:
 
         for p in range(4):
             if p != self.player_id:
+                state.players[p].special_cards = []
                 for card in range(self.rivals_info[p]['special_cards']):
                     state.players[p].special_cards.append(state.special_cards.pop())
 

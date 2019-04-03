@@ -12,20 +12,22 @@ MAX_MOVES = 160
 
 # Neural Network
 DISABLE_PLAYERS_TRADES = False
-ETA = 0.3
+ETA = 0.2
 DETERMINISTIC_PLAY = False
-CURRENT_AGENT = [(15, 19), (16, 20), (17, 21), 
-                 (18, 22), (23, 27), (24, 28), (25, 29), 
-                 (31, 35), (32, 36), (33, 37), (34, 38)]
-SELF_PLAY_BATCH_SIZE = 70
+CURRENT_AGENT = [(24, 28), (25, 29), 
+                 (31, 35), (32, 36), (33, 37), (34, 38),
+                 (48, 52), (49, 53), (50, 54),
+                 (55, 59), (56, 60), (57, 61), (58, 62),
+                 (63, 67), (64, 68), (65, 69), (66, 70)]
+SELF_PLAY_BATCH_SIZE = 85
 VALIDATION_BATCH_SIZE = 1024
 TRAIN_BATCH_SIZE = 256
-TRAINING_LOOPS = 100
+TRAINING_LOOPS = 150
 EPOCHS = 1
-MCTS_EXPLORATION = 150
+MCTS_EXPLORATION = 225
 MOMENTUM = 0.9
 REG_CONST = 0.0001
-LEARNING_RATE = 0.09
+LEARNING_RATE = 0.07
 
 INPUT_START_DIM = (49, 6, 11)
 INPUT_DIM = (100, 6, 11)

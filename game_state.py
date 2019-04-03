@@ -1011,7 +1011,9 @@ class GameState:
             else:
                 self.handle_cancel_trade()
               
-        if self.ai_rollout == 0:  
+        if self.ai_rollout == 0 and move[0] in [config.BUY_SPECIAL_CARD, config.STEAL_FROM_HOUSE, config.THROW_DICE]:
+            self.remove_ai_trees()
+        elif self.ai_rollout == 0:  
             self.descend_trees(move)
 
     def descend_trees(self, move):
