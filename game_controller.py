@@ -35,6 +35,12 @@ class GameController:
                 if self.game.game_phase == config.PHASE_THROW_DICE:
                     self.controller_state = 10
                     self.game.boardgame_state = 0
+            elif self.game.boardgame_state == 2:
+                self.controller_state = 11
+                self.game.boardgame_state = 0
+            elif self.game.boardgame_state == 3:
+                self.controller_state = 12
+                self.game.boardgame_state = 0
         except:
             pass
 
@@ -86,6 +92,8 @@ class GameController:
             self.draw_tool.draw_configure(self.config_game, self.controller_state)
         elif self.controller_state == 10:
             self.draw_tool.draw_dice_options()
+        elif self.controller_state == 11:
+            self.draw_tool.draw_special_cards_options()
 
     def click_in_vertex(self, pos):
         for _, vertices in config.tiles_vertex.items():
@@ -207,6 +215,17 @@ class GameController:
 
         return None
 
+    def check_click_special_card(self, pos):
+        for i in range(config.YEAR_OF_PLENTY + 1):
+            if self.pos_in_rectangle(pos, config.menu_x_offset, config.menu_y_offset + i * config.dice_step, config.ports_size[0], config.ports_size[1]):
+                return i
+
+        return None
+
+    def check_click_stolen_card(self, pos):
+
+        return None
+
     def handle_mouse_button_down(self, pos, button):
         if self.controller_state == 0:
             if self.check_click_menu(pos) == 'start_game':
@@ -272,6 +291,18 @@ class GameController:
             click_action = self.check_click_dice(pos)
             if click_action is not None:
                 self.game.execute_dice_result(click_action)
+                self.controller_state = 1
+
+        elif self.controller_state == 11:
+            click_action = self.check_click_special_card(pos)
+            if click_action is not None:
+                self.game.handle_buy_given_special_card(click_action)
+                self.controller_state = 1
+
+        elif self.controller_state == 12:
+            click_action = self.check_click_stolen_card(pos)
+            if click_action is not None:
+                self.game.handle_steal_given_card_from(click_action[0], click_action[1])
                 self.controller_state = 1
 
         elif self.controller_state == 1:

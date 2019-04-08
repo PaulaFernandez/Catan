@@ -618,6 +618,10 @@ class GameState:
                     self.log = "Throw Dice"
 
     def handle_steal_from(self, vertex):
+        if self.ai_rollout == 0 and self.type_game == 1:
+            self.boardgame_state = 3
+            return
+
         for vertex_from, player_id in self.houses_to_steal_from:
             if vertex_from == vertex:
                 cards_list = self.players[player_id].cards_as_list()
@@ -688,6 +692,10 @@ class GameState:
             self.log = "Choose action"
 
     def handle_buy_special_card(self):
+        if self.ai_rollout == 0 and self.type_game == 1:
+            self.boardgame_state = 2
+            return
+
         if self.players[self.player_turn].available_resources('special_card'):
             if len(self.special_cards) > 0:
                 self.players[self.player_turn].remove_resources_by_improvement('special_card')
