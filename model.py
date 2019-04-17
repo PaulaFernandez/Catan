@@ -35,11 +35,11 @@ class Gen_Model():
     def fit(self, states, targets, epochs, verbose, validation_split, batch_size, validation_data):
         return self.model.fit(states, targets, epochs=epochs, verbose=verbose, validation_data = validation_data, validation_split = validation_split, batch_size = batch_size)
 
-    def write(self, version):
-        self.model.save_weights(config.folder_agents + '\\' + "{0:0>5}".format(version) + '.h5')
+    def write(self, version, type):
+        self.model.save_weights(config.folder_agents + '\\' + "{0:0>5}".format(version) + type + '.h5')
 
-    def read(self, version):
-        return self.model.load_weights( config.folder_agents + '\\' + "{0:0>5}".format(version) + '.h5')
+    def read(self, version, type):
+        return self.model.load_weights( config.folder_agents + '\\' + "{0:0>5}".format(version) + type + '.h5')
 
 class Residual_CNN(Gen_Model):
     def __init__(self, reg_const, learning_rate, input_dim,  output_dim, hidden_layers):

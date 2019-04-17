@@ -1,5 +1,5 @@
 from random import shuffle, choice
-from copy import deepcopy
+from copy import copy, deepcopy
 import uuid
 import player
 import config
@@ -10,7 +10,7 @@ class GameState:
         self.uuid = uuid.uuid1()
         self.counter = 0
 
-        if 'tiles' in game_config:
+        if game_config is not None and 'tiles' in game_config:
             self.tiles = game_config['tiles']
             self.numbers = game_config['numbers']
             self.ports = game_config['ports']
@@ -35,17 +35,16 @@ class GameState:
         self.special_cards_played = []
         self.dice_thrown = 0
         self.moves = 0
-
-        self.type_game = game_config['TYPE_OF_GAME']
+        
+        if game_config is not None:
+            self.type_game = game_config['TYPE_OF_GAME']
+        else:
+            self.type_game = config.TYPE_OF_GAME
+            
         self.boardgame_state = 0
 
         # Robber initial position
         self.robber_tile = self.tiles.index(config.DESERT)
-
-        if game_config is None:
-            mcts_exploration = config.MCTS_EXPLORATION
-        else:
-            mcts_exploration = game_config['MCTS_EXPLORATION']
 
         self.players = []
         for i in range(4): # 4 players
@@ -53,6 +52,15 @@ class GameState:
 
             if config.player_is_human[i] == 0:
                 selected_agent = choice(agents_obj)
+                
+                if game_config is None:
+                    if selected_agent[0] == "h":
+                        mcts_exploration = config.MCTS_EXPLORATION_HEURISTIC
+                    else:
+                        mcts_exploration = config.MCTS_EXPLORATION
+                else:
+                    mcts_exploration = game_config['MCTS_EXPLORATION']
+                
                 self.players[i].ai = MCTS_AI(i, selected_agent[1], mcts_exploration, selected_agent[0])
 
         self.max_road = {0: 1, 1: 1, 2: 1, 3: 1}
@@ -67,6 +75,24 @@ class GameState:
 
         # Game Phase
         self.game_phase = config.PHASE_INITIAL_SETTLEMENT
+
+    def __copy__(self):
+        cls = self.__class__
+        result = cls.__new__(cls)
+
+        result.__dict__ = self.__dict__.copy(  )
+        
+        #result.__dict__["players"] = []
+        #for i in range(4):
+        #    result.__dict__["players"].append(copy(self.__dict__["players"][i]))
+        
+        for key in ["special_cards", "special_cards_played", "players_to_discard", "houses_to_steal_from"]:
+            result.__dict__[key] = self.__dict__[key][:]
+        
+        for key in ["players", "trades_proposed", "max_road", "players_trade"]:
+            result.__dict__[key] = deepcopy(self.__dict__[key])
+        
+        return result
 
     @staticmethod
     def generate_ports():

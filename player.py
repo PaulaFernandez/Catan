@@ -21,6 +21,31 @@ class Player():
         self.valid_roads = []
         self.current_trade = {}
         self.initialize_trade()
+
+    def __copy__(self):
+        cls = self.__class__
+        result = cls.__new__(cls)
+
+        result.__dict__.update(self.__dict__)
+        
+        result.__dict__["ai"] = None 
+        
+        for key in ["special_cards", "settlements", "cities", "roads", "valid_roads"]:
+            result.__dict__[key] = self.__dict__[key][:]
+        
+        for key in ["current_trade"]:
+            result.__dict__[key] = deepcopy(self.__dict__[key])
+        
+        return result
+
+    def __deepcopy__(self, memo):
+        cls = self.__class__
+        result = cls.__new__(cls)
+        memo[id(self)] = result
+        for k, v in self.__dict__.items():
+            if k not in ["ai"]:
+                setattr(result, k, deepcopy(v, memo))
+        return result
     
     def initialize_trade(self):
         self.current_trade = {'type': -1,

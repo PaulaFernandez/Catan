@@ -5,7 +5,8 @@ from game_memory import GameMemory
 import config
 import traceback
 
-from model import Residual_CNN
+from agent_nn import Agent_NN
+from agent_heuristic import Agent_Heuristic
 
 def play_game(agents_obj):
     game = GameState(agents_obj = agents_obj)
@@ -39,11 +40,12 @@ games_played = 0
 agents_obj = []
 
 for a in agents:
-    net = [Residual_CNN(config.REG_CONST, config.LEARNING_RATE, config.INPUT_START_DIM, config.OUTPUT_START_DIM, config.HIDDEN_CNN_LAYERS),
-           Residual_CNN(config.REG_CONST, config.LEARNING_RATE, config.INPUT_DIM, config.OUTPUT_DIM, config.HIDDEN_CNN_LAYERS)]
-    
-    net[0].read(a[0])
-    net[1].read(a[1])
+    print ("Loading Agent: " + str(a))
+    if a == "h":
+        net = Agent_Heuristic()
+    else:
+        net = Agent_NN()
+        net.nn_read(a)
     
     agents_obj.append((str(a), net))
 

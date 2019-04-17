@@ -1,8 +1,9 @@
 from math import sqrt
-from copy import deepcopy
+from copy import copy, deepcopy
 from random import shuffle, choice
 import config
 import numpy as np
+import pickle
 
 class Node:
     """ A node in the game tree. Note wins is always from the viewpoint of player_turn.
@@ -206,9 +207,8 @@ class MCTS_AI:
         self.agent_name = agent_name
         self.rivals_info = {}
         self.rootnode = None
-        
-        self.nn_start = agent[0]
-        self.nn = agent[1]
+        self.deteministic_play = config.DETERMINISTIC_PLAY
+        self.agent = agent
 
         for p in range(4):
             if p != self.player_id:
@@ -220,16 +220,16 @@ class MCTS_AI:
         result = cls.__new__(cls)
         memo[id(self)] = result
         for k, v in self.__dict__.items():
-            if k not in ["nn", "nn_start", "rootnode"]:
+            if k not in ["agent", "rootnode"]:
                 setattr(result, k, deepcopy(v, memo))
         return result
     
     def descend_tree(self, move):
-        # if self.rootnode is not None:
-            # for n in self.rootnode.childNodes:
-                # if n.move == move:
-                    # self.rootnode = n
-                    # return
+        if self.rootnode is not None:
+            for n in self.rootnode.childNodes:
+                if n.move == move:
+                    self.rootnode = n
+                    return
                 
         self.rootnode = None
         
@@ -310,8 +310,7 @@ class MCTS_AI:
                 state.ai_do_move(node.move)
 
                 if evaluate == True:
-                    network = self.build_nn_input(state, node.current_player, determined = 1)
-                    prediction = self.predict(network)
+                    prediction = self.agent.predict(state, node.current_player, self, determined = 1)
                     
                     node.add_probabilities(prediction[1][0])
             else:
@@ -330,9 +329,7 @@ class MCTS_AI:
             state.ai_do_move(m)
         node = node.add_child(current_player, m) # add child and descend tree
 
-        network = self.build_nn_input(state, node.current_player, determined = 1)
-        prediction = self.predict(network)
-        
+        prediction = self.agent.predict(state, node.current_player, self, determined = 1)
         node.add_probabilities(prediction[1][0])
 
         if node.is_random:
@@ -340,187 +337,10 @@ class MCTS_AI:
             state.ai_do_move(node.move)
 
             if evaluate == True:
-                network = self.build_nn_input(state, node.current_player, determined = 1)
-                prediction = self.predict(network)
-                
+                prediction = self.agent.predict(state, node.current_player, self, determined = 1)
                 node.add_probabilities(prediction[1][0])
 
         return node, prediction
-    
-    def build_start_nn_input(self, state, perspective):
-        nn_input = np.zeros((1, config.INPUT_START_DIM[0], config.INPUT_START_DIM[1], config.INPUT_START_DIM[2]), dtype=np.float32)
-
-        numbers_output = {2: 1, 3: 2, 4: 3, 5: 4, 6: 5, 8: 5, 9: 4, 10: 3, 11: 2, 12: 1}
-
-        # Resources outputs
-        for number, tile in state.numbers:
-            resource = state.tiles[tile]
-            for vertex in config.tiles_vertex[tile]:
-                nn_input[0, resource - 2, config.vertex_to_nn_input[vertex][0], config.vertex_to_nn_input[vertex][1]] += numbers_output[number] / 15.0
-
-        # Ports
-        for key, r in enumerate([config.SHEEP, config.ORE, config.BRICK, config.WHEAT, config.WOOD, config.GENERIC]):
-            indices = [i for i, x in enumerate(state.ports) if x == r]
-            for i in indices:
-                for vertex in config.ports_vertex[i]['vert']:
-                    nn_input[0, key + 5, config.vertex_to_nn_input[vertex][0], config.vertex_to_nn_input[vertex][1]] = 1
-        
-        # Settlements, cities, roads
-        for p in range(4):
-            p_order = (4 + p - perspective) % 4
-            for s in state.players[p].settlements:
-                nn_input[0, 11 + 2 * p_order, config.vertex_to_nn_input[s][0], config.vertex_to_nn_input[s][1]] = 1
-            for r in state.players[p].roads:
-                nn_input[0, 12 + 2 * p_order, config.vertex_to_nn_input[r[0]][0], config.vertex_to_nn_input[r[0]][1]] += 1 / 3.0
-                nn_input[0, 12 + 2 * p_order, config.vertex_to_nn_input[r[1]][0], config.vertex_to_nn_input[r[1]][1]] += 1 / 3.0
-
-        # Cards
-        for p in range(4):
-            p_order = (4 + p - perspective) % 4
-            
-            if p != self.player_id:
-                min_cards = self.get_undetermined_resources_rivals(p)
-                
-                for key, r in enumerate([config.SHEEP, config.ORE, config.BRICK, config.WHEAT, config.WOOD]):
-                    nn_input[0, 19 + key + 6 * p_order, :, :] = min_cards[key] / 10.0         
-                    
-            else:
-                for key, r in enumerate([config.SHEEP, config.ORE, config.BRICK, config.WHEAT, config.WOOD]):
-                    nn_input[0, 19 + key + 6 * p_order, :, :] = state.players[p].cards[r] / 10.0
-                    
-            nn_input[0, 24 + 6 * p_order, :, :] = state.players[p].total_cards() / 20.0
-                
-        # State
-        if (state.game_phase == config.PHASE_INITIAL_SETTLEMENT or state.game_phase == config.PHASE_INITIAL_ROAD) and state.initial_phase_decrease == 0:
-            nn_input[0, 43, :, :] = 1
-        if (state.game_phase == config.PHASE_INITIAL_SETTLEMENT or state.game_phase == config.PHASE_INITIAL_ROAD) and state.initial_phase_decrease == 1:
-            nn_input[0, 44, :, :] = 1
-
-        # Player turn
-        for p in range(4):
-            p_order = (4 + p - perspective) % 4
-            if p == state.player_turn:
-                nn_input[0, 45 + p_order, :, :] = 1
-
-        return nn_input
-
-    def build_nn_input(self, state, perspective, determined = 0):
-        if state.game_phase == config.PHASE_INITIAL_SETTLEMENT or state.game_phase == config.PHASE_INITIAL_ROAD:
-            return self.build_start_nn_input(state, perspective)
-        
-        nn_input = np.zeros((1, config.INPUT_DIM[0], config.INPUT_DIM[1], config.INPUT_DIM[2]), dtype=np.float32)
-
-        numbers_output = {2: 1, 3: 2, 4: 3, 5: 4, 6: 5, 8: 5, 9: 4, 10: 3, 11: 2, 12: 1}
-
-        # Resources outputs
-        for number, tile in state.numbers:
-            resource = state.tiles[tile]
-            for vertex in config.tiles_vertex[tile]:
-                nn_input[0, resource - 2, config.vertex_to_nn_input[vertex][0], config.vertex_to_nn_input[vertex][1]] += numbers_output[number] / 15.0
-
-        # Ports
-        for key, r in enumerate([config.SHEEP, config.ORE, config.BRICK, config.WHEAT, config.WOOD, config.GENERIC]):
-            indices = [i for i, x in enumerate(state.ports) if x == r]
-            for i in indices:
-                for vertex in config.ports_vertex[i]['vert']:
-                    nn_input[0, key + 5, config.vertex_to_nn_input[vertex][0], config.vertex_to_nn_input[vertex][1]] = 1
-        
-        # Settlements, cities, roads
-        for p in range(4):
-            p_order = (4 + p - perspective) % 4
-            for s in state.players[p].settlements:
-                nn_input[0, 11 + 3 * p_order, config.vertex_to_nn_input[s][0], config.vertex_to_nn_input[s][1]] = 1
-            for c in state.players[p].cities:
-                nn_input[0, 12 + 3 * p_order, config.vertex_to_nn_input[c][0], config.vertex_to_nn_input[c][1]] = 1
-            for r in state.players[p].roads:
-                nn_input[0, 13 + 3 * p_order, config.vertex_to_nn_input[r[0]][0], config.vertex_to_nn_input[r[0]][1]] += 1 / 3.0
-                nn_input[0, 13 + 3 * p_order, config.vertex_to_nn_input[r[1]][0], config.vertex_to_nn_input[r[1]][1]] += 1 / 3.0
-
-        # Cards
-        for p in range(4):
-            p_order = (4 + p - perspective) % 4
-            
-            if determined == 0 and p != self.player_id:
-                min_cards = self.get_undetermined_resources_rivals(p)
-                
-                for key, r in enumerate([config.SHEEP, config.ORE, config.BRICK, config.WHEAT, config.WOOD]):
-                    nn_input[0, 23 + key + 6 * p_order, :, :] = min_cards[key] / 10.0         
-                    
-            else:
-                for key, r in enumerate([config.SHEEP, config.ORE, config.BRICK, config.WHEAT, config.WOOD]):
-                    nn_input[0, 23 + key + 6 * p_order, :, :] = state.players[p].cards[r] / 10.0
-                    
-            nn_input[0, 28 + 6 * p_order, :, :] = state.players[p].total_cards() / 20.0
-
-        # Robber
-        for vertex in config.tiles_vertex[state.robber_tile]:
-            nn_input[0, 47, config.vertex_to_nn_input[vertex][0], config.vertex_to_nn_input[vertex][1]] = 1
-
-        # Army Cards Played
-        for p in range(4):
-            p_order = (4 + p - perspective) % 4
-            nn_input[0, 48 + p_order, :, :] = state.players[p].used_knights / 5.0
-
-        # Army Holder
-        for p in range(4):
-            p_order = (4 + p - perspective) % 4
-            nn_input[0, 52 + p_order, :, :] = state.players[p].largest_army_badge
-
-        # Longest Road Holder
-        for p in range(4):
-            p_order = (4 + p - perspective) % 4
-            nn_input[0, 56 + p_order, :, :] = state.players[p].longest_road_badge
-            
-        # Special Cards
-        for p in range(4):
-            p_order = (4 + p - perspective) % 4
-            
-            if determined == 1 or p == self.player_id:
-                for key, r in enumerate([config.VICTORY_POINT, config.KNIGHT, config.MONOPOLY, config.ROAD_BUILDING, config.YEAR_OF_PLENTY]):
-                    nn_input[0, 60 + key + 6 * p_order, :, :] = state.players[p].special_cards.count(r) / 3.0
-                
-            nn_input[0, 65 + 6 * p_order, :, :] = state.players[p].total_special_cards() / 3.0
-
-        # Points
-        for p in range(4):
-            p_order = (4 + p - perspective) % 4
-            nn_input[0, 84 + p_order, :, :] = state.players[p].points() / 10.0
-
-        # Discarding, initial game phase
-        if state.game_phase == config.PHASE_DISCARD:
-            nn_input[0, 88, :, :] = 1
-
-        # Player turn
-        for p in range(4):
-            p_order = (4 + p - perspective) % 4
-            if p == state.player_turn:
-                nn_input[0, 89 + p_order, :, :] = 1
-
-        # Other game phases
-        if state.game_phase == config.PHASE_THROW_DICE:
-            nn_input[0, 93, :, :] = 1
-        if state.game_phase == config.PHASE_MOVE_ROBBER:
-            nn_input[0, 94, :, :] = 1
-        if state.game_phase == config.PHASE_STEAL_CARD:
-            nn_input[0, 95, :, :] = 1
-        if state.game_phase == config.PHASE_ROAD_BUILDING:
-            nn_input[0, 96, :, :] = 1
-        if state.game_phase == config.PHASE_YEAR_OF_PLENTY:
-            nn_input[0, 97, :, :] = 1
-        if state.game_phase == config.PHASE_TRADE_RESPOND:
-            nn_input[0, 98, :, :] = 1
-            
-        for s in range(54):
-            if state.available_settlement_spot(s):
-                nn_input[0, 99, config.vertex_to_nn_input[s][0], config.vertex_to_nn_input[s][1]] = 1
-
-        return nn_input
-    
-    def predict(self, network):
-        if network.shape[1] == config.INPUT_DIM[0]:
-            return self.nn.predict(network)
-        else:
-            return self.nn_start.predict(network)
     
     def determinization(self, state):
         # Rivals cards
@@ -537,7 +357,7 @@ class MCTS_AI:
                                           config.WOOD: cards_set[4]}
 
         # Special Cards
-        state.special_cards = deepcopy(config.special_cards_vector)
+        state.special_cards = config.special_cards_vector[:]
         for c in state.special_cards_played:
             try:
                 state.special_cards.remove(c)
@@ -554,7 +374,7 @@ class MCTS_AI:
         for p in range(4):
             if p != self.player_id:
                 state.players[p].special_cards = []
-                for card in range(self.rivals_info[p]['special_cards']):
+                for _ in range(self.rivals_info[p]['special_cards']):
                     state.players[p].special_cards.append(state.special_cards.pop())
 
     def calc_posteriors(self, rootnode, rootstate):
@@ -575,18 +395,21 @@ class MCTS_AI:
     def move(self, rootstate):
         iterations_done = 0
         
+        if rootstate.moves >= config.DETEMINISTIC_MOVES_THRESHOLD:
+            self.deteministic_play = True
+        
         if self.rootnode is None:
             self.rootnode = Node(rootstate.get_player_moving())
         else:
             iterations_done = self.rootnode.N
+            self.rootnode.current_player = rootstate.get_player_moving()
         
         if len(self.rootnode.get_possible_moves(rootstate)) == 1:
             print (rootstate.get_player_moving())
             print (self.rootnode.possible_moves[0])
             return self.rootnode.possible_moves[0], 0, rootstate.get_player_moving()
         
-        start_network = self.build_nn_input(rootstate, self.rootnode.current_player, determined = 0)
-        start_prediction = self.predict(start_network)
+        start_prediction = self.agent.predict(rootstate, self.rootnode.current_player, self, determined = 0)
         self.rootnode.add_probabilities(start_prediction[1][0])
         print(rootstate.get_player_moving())
         print(start_prediction[0])
@@ -596,7 +419,7 @@ class MCTS_AI:
             
             while valid_determinization is False:
                 node = self.rootnode
-                state = deepcopy(rootstate)
+                state = copy(rootstate)
                 state.ai_rollout = 1
 
                 # Determinization
@@ -626,17 +449,16 @@ class MCTS_AI:
                 p_order = (4 + node.current_player - last_node_player) % 4
                 
                 if expansion_result[p_order] is None:
-                    network = self.build_nn_input(state, node.current_player, determined = 1)
-                    prediction = self.predict(network)
+                    prediction = self.agent.predict(state, node.current_player, self, determined = 1)
                     expansion_result[p_order] = prediction[0][0][0]
                     
                 node.update(expansion_result[p_order]) # state is terminal. Update node with result from POV of node.playerJustMoved
                 node = node.parentNode
                 
-            if config.DETERMINISTIC_PLAY is True and i > self.itermax / 2.0:
+            if self.deteministic_play is True and i > self.itermax / 2.0:
                 s_children = sorted(self.rootnode.childNodes, key = lambda c: c.N)
                 
-                if s_children[-1].N > s_children[-2].N + self.itermax - i:
+                if len(s_children) < 2 or s_children[-1].N > s_children[-2].N + self.itermax - i:
                     move = s_children[-1].move
                     
                     print (self.rootnode.ChildrenToString())
@@ -649,7 +471,7 @@ class MCTS_AI:
 
         posterior_probs = self.calc_posteriors(self.rootnode, rootstate)
         
-        if config.DETERMINISTIC_PLAY is True:
+        if self.deteministic_play is True:
             move = sorted(self.rootnode.childNodes, key = lambda c: c.N)[-1].move
         else:
             move = np.random.choice(self.rootnode.childNodes, p = self.rootnode.get_child_probs()).move
