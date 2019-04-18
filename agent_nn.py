@@ -13,7 +13,7 @@ class Agent_NN:
         self.nn.read(name, 'g')
     
     def predict(self, state, perspective, mcts, determined = 0):
-        network = self.build_nn_input(state, perspective, mcts, determined = 0)
+        network = self.build_nn_input(state, perspective, mcts = mcts, determined = 0)
     
         if network.shape[1] == config.INPUT_DIM[0]:
             return self.nn.predict(network)
@@ -69,7 +69,7 @@ class Agent_NN:
 
         return nn_input
 
-    def build_nn_input(self, state, perspective, mcts, determined = 0):
+    def build_nn_input(self, state, perspective, mcts = None, determined = 0):
         if state.game_phase == config.PHASE_INITIAL_SETTLEMENT or state.game_phase == config.PHASE_INITIAL_ROAD:
             return self.build_start_nn_input(state, perspective)
         

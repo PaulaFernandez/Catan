@@ -1,7 +1,7 @@
 import pickle
 from os import listdir
 from random import choice
-from mcts_ai import MCTS_AI
+from agent_nn import Agent_NN
 import numpy as np
 
 import config
@@ -10,7 +10,7 @@ num_states_start = 16
 
 def create_sets(type, batch_size, i, states_per_loop, train_net, train_head):
     states = {}
-    dummy_ai = MCTS_AI(0, [None, None], 0, 0)
+    dummy_ai = Agent_NN()
 
     for j in range(states_per_loop):
         states[j] = {'states': [],

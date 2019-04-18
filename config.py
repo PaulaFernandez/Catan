@@ -16,8 +16,8 @@ DISABLE_PLAYERS_TRADES = False
 ETA = 0.7
 DETERMINISTIC_PLAY = True
 DETEMINISTIC_MOVES_THRESHOLD = 12
-CURRENT_AGENT = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
-SELF_PLAY_BATCH_SIZE = 100
+CURRENT_AGENT = ['h', 1, 2, 3, 4, 5, 6, 7, 8, 9]
+SELF_PLAY_BATCH_SIZE = 50
 VALIDATION_BATCH_SIZE = 2048
 TRAIN_BATCH_SIZE = 512
 TRAINING_LOOPS = 250
@@ -36,8 +36,8 @@ OUTPUT_START_DIM = 198
 OUTPUT_DIM = 941
 
 HIDDEN_CNN_LAYERS = [
-	{'filters':32, 'kernel_size': (3,3)}
-	 , {'filters':32, 'kernel_size': (3,3)}
+	{'filters':16, 'kernel_size': (1,1)}
+	 , {'filters':16, 'kernel_size': (1,1)}
 	]
 
 folder_self_play = 'games'

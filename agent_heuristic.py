@@ -55,8 +55,18 @@ class Agent_Heuristic():
                 points.append(state.players[p].points(hidden = 0))
                 
         return np.array(points)
+        
+    def get_tile_output(self, state, tile):
+        numbers_output = {2: 1, 3: 2, 4: 3, 5: 4, 6: 5, 8: 5, 9: 4, 10: 3, 11: 2, 12: 1}
+        
+        for number, tile_n in state.numbers:
+            if tile == tile_n:
+                return numbers_output[number]
+            
     
     def extra_value(self, state, mcts):
+        numbers_output = {2: 1, 3: 2, 4: 3, 5: 4, 6: 5, 8: 5, 9: 4, 10: 3, 11: 2, 12: 1}
+    
         extra_value = []
         
         for p in range(4):
@@ -67,15 +77,15 @@ class Agent_Heuristic():
                 for tile, vertices in config.tiles_vertex.items():
                     if s in vertices:
                         if state.tiles[tile] != config.DESERT:
-                            resources[state.tiles[tile] - 2] += 1
+                            resources[state.tiles[tile] - 2] += self.get_tile_output(state, tile)
                         
             for c in state.players[p].cities:
                 for tile, vertices in config.tiles_vertex.items():
                     if c in vertices:
                         if state.tiles[tile] != config.DESERT:
-                            resources[state.tiles[tile] - 2] += 2
+                            resources[state.tiles[tile] - 2] += 2 * self.get_tile_output(state, tile)
                             
-            estimated_value = np.sum(np.array([0.15, 0.2, 0.15, 0.15, 0.15]) * resources)
+            estimated_value = np.sum(np.array([0.025, 0.035, 0.03, 0.03, 0.03]) * resources)
                 
             has_road_in_pot_sett = 0
             # Has road in potential settlement

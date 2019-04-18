@@ -101,7 +101,7 @@ class Residual_CNN(Gen_Model):
         x = Flatten(name='value_flatten')(x)
 
         x = Dense(
-            20
+            15
             , use_bias=False
             , activation='linear'
             , kernel_regularizer=regularizers.l2(self.reg_const)
