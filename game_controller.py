@@ -2,7 +2,9 @@ import pickle
 import config
 from draw_screen import DrawScreen
 from game_state import GameState
-from model import Residual_CNN
+
+from agent_nn import Agent_NN
+from agent_heuristic import Agent_Heuristic
 
 class GameController:
     def __init__(self):
@@ -19,10 +21,13 @@ class GameController:
         agents_obj = []
 
         for a in agents:
-            net = [Residual_CNN(config.REG_CONST, config.LEARNING_RATE, config.INPUT_START_DIM, config.OUTPUT_START_DIM, config.HIDDEN_CNN_LAYERS),
-                   Residual_CNN(config.REG_CONST, config.LEARNING_RATE, config.INPUT_DIM, config.OUTPUT_DIM, config.HIDDEN_CNN_LAYERS)]
-            net[0].read(a[0])
-            net[1].read(a[1])
+            print ("Loading Agent: " + str(a))
+            if a == "h":
+                net = Agent_Heuristic()
+            else:
+                net = Agent_NN()
+                net.nn_read(a)
+            
             agents_obj.append((str(a), net))
 
         self.game = GameState(agents_obj = agents_obj, game_config = self.config_game)
@@ -94,6 +99,8 @@ class GameController:
             self.draw_tool.draw_dice_options()
         elif self.controller_state == 11:
             self.draw_tool.draw_special_cards_options()
+        elif self.controller_state == 12:
+            self.draw_tool.draw_steal_cards_options()
 
     def click_in_vertex(self, pos):
         for _, vertices in config.tiles_vertex.items():
@@ -223,6 +230,12 @@ class GameController:
         return None
 
     def check_click_stolen_card(self, pos):
+        for i, card in enumerate(config.card_types):
+            if self.pos_in_rectangle(pos, config.menu_x_offset, config.menu_y_offset + i * config.dice_step, config.ports_size[0], config.ports_size[1]):
+                return card
+
+        if self.pos_in_rectangle(pos, config.menu_x_offset, config.menu_y_offset + len(config.card_types) * config.dice_step, config.ports_size[0], config.ports_size[1]):
+            return 0
 
         return None
 
@@ -232,8 +245,13 @@ class GameController:
                 if self.config_game['TYPE_OF_GAME'] == 0:
                     self.start_game()
                 elif self.config_game['TYPE_OF_GAME'] == 1:
-                    #self.configure_game()
-                    self.start_game()
+                    self.configure_game()
+                    #self.start_game()
+            elif self.check_click_menu(pos) == 'load_game':
+                with open('game.pkl', 'rb') as input_file:
+                    self.game = pickle.load(input_file)
+                    self.game.log = "Game loaded"
+                self.controller_state = 1
             elif self.check_click_menu(pos) == 'options':
                 self.controller_state = 2
 
@@ -302,7 +320,7 @@ class GameController:
         elif self.controller_state == 12:
             click_action = self.check_click_stolen_card(pos)
             if click_action is not None:
-                self.game.handle_steal_given_card_from(click_action[0], click_action[1])
+                self.game.handle_steal_given_card_from(self.game.vertex_to_steal, click_action)
                 self.controller_state = 1
 
         elif self.controller_state == 1:

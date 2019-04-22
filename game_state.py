@@ -42,6 +42,7 @@ class GameState:
             self.type_game = config.TYPE_OF_GAME
             
         self.boardgame_state = 0
+        self.vertex_to_steal = -1
 
         # Robber initial position
         self.robber_tile = self.tiles.index(config.DESERT)
@@ -59,7 +60,10 @@ class GameState:
                     else:
                         mcts_exploration = config.MCTS_EXPLORATION
                 else:
-                    mcts_exploration = game_config['MCTS_EXPLORATION']
+                    if selected_agent[0] == "h":
+                        mcts_exploration = 10 * game_config['MCTS_EXPLORATION']
+                    else:
+                        mcts_exploration = game_config['MCTS_EXPLORATION']
                 
                 self.players[i].ai = MCTS_AI(i, selected_agent[1], mcts_exploration, selected_agent[0])
 
@@ -646,6 +650,7 @@ class GameState:
     def handle_steal_from(self, vertex):
         if self.ai_rollout == 0 and self.type_game == 1:
             self.boardgame_state = 3
+            self.vertex_to_steal = vertex
             return
 
         for vertex_from, player_id in self.houses_to_steal_from:
@@ -677,6 +682,7 @@ class GameState:
                 self.players[self.player_turn].add_resources({card_stolen: 1})
                 self.players[player_id].remove_resources({card_stolen: 1})
 
+                self.vertex_to_steal = -1
                 self.game_phase = config.PHASE_WAIT
                 self.log = "Choose action"
                 return

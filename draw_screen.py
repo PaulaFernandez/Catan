@@ -210,6 +210,13 @@ class DrawScreen:
         for i, card in enumerate([config.VICTORY_POINT, config.KNIGHT, config.MONOPOLY, config.ROAD_BUILDING, config.YEAR_OF_PLENTY]):
             self.draw(config.menu_x_offset, config.menu_y_offset + i * config.dice_step, config.special_cards[card]['img'], config.ports_size, angle=0)
 
+    def draw_steal_cards_options(self):
+        self.draw(0, 0, 'img/background.jpg', (1400,900))
+        for i, card in enumerate(config.card_types):
+            self.draw(config.menu_x_offset, config.menu_y_offset + i * config.dice_step, config.card_types[card]['img'], config.ports_size, angle=0)
+
+        self.draw(config.menu_x_offset, config.menu_y_offset + len(config.card_types) * config.dice_step, config.tile_types[config.DESERT]['img'], config.ports_size, angle=0)
+
     def draw_start(self):
         self.draw(0, 0, 'img/background.jpg', (1400,900))
         self.draw(config.menu_x_offset, config.menu_y_offset, config.start_image, config.menu_image_size, angle=0)
