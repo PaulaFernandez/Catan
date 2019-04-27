@@ -11,6 +11,10 @@ class Agent_NN:
     def nn_read(self, name):
         self.nn_start.read(name, 's')
         self.nn.read(name, 'g')
+        
+    def nn_write(self, name):
+        self.nn_start.write(name, 's')
+        self.nn.write(name, 'g')
     
     def predict(self, state, perspective, mcts, determined = 0):
         network = self.build_nn_input(state, perspective, mcts = mcts, determined = 0)

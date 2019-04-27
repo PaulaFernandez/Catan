@@ -229,6 +229,7 @@ class MCTS_AI:
             for n in self.rootnode.childNodes:
                 if n.move == move:
                     self.rootnode = n
+                    self.rootnode.parentNode = None
                     return
                 
         self.rootnode = None

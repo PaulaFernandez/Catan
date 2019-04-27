@@ -12,7 +12,7 @@ class Agent_Heuristic():
         
         sum_value = np.max([np.sum(extra_value), 0.01])
         max_points = np.max(points)
-        extra_value = extra_value * (2.0 - 0.1 * max_points) / sum_value
+        extra_value = extra_value * (2.0 - 0.15 * max_points) / sum_value
         
         if state.game_phase == config.PHASE_INITIAL_SETTLEMENT or state.game_phase == config.PHASE_INITIAL_ROAD:
             move_probabilities = [0.1] * config.OUTPUT_START_DIM
@@ -58,10 +58,14 @@ class Agent_Heuristic():
         
     def get_tile_output(self, state, tile):
         numbers_output = {2: 1, 3: 2, 4: 3, 5: 4, 6: 5, 8: 5, 9: 4, 10: 3, 11: 2, 12: 1}
+        robber_correction = 0.7
         
         for number, tile_n in state.numbers:
             if tile == tile_n:
-                return numbers_output[number]
+                if state.robber_tile == tile:
+                    return robber_correction * numbers_output[number]
+                else:
+                    return numbers_output[number]
             
     
     def extra_value(self, state, mcts):
@@ -108,6 +112,10 @@ class Agent_Heuristic():
                 estimated_value += 0.025
             if state.players[p].available_resources('special_card'):
                 estimated_value += 0.05
+                
+            # More 7 cards penalty
+            if state.players[p].total_cards() > 7:
+                estimated_value -= 0.02
                             
             extra_value.append(estimated_value)
             

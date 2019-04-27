@@ -35,6 +35,7 @@ class GameState:
         self.special_cards_played = []
         self.dice_thrown = 0
         self.moves = 0
+        self.last_dice_rolled = 0
         
         if game_config is not None:
             self.type_game = game_config['TYPE_OF_GAME']
@@ -226,6 +227,14 @@ class GameState:
         self.player_turn = (self.player_turn + 1) % 4
 
         return
+        
+    def resource_available_port_trade(self, resource):
+        resources = self.total_resources_in_play()
+        
+        if resources[resource] < config.max_resources:
+            return True
+            
+        return False
 
     def total_resources_in_play(self):
         resources_in_play = {config.BRICK: 0, config.ORE: 0, config.WHEAT: 0, config.WOOD: 0, config.SHEEP: 0}
@@ -273,6 +282,9 @@ class GameState:
 
         result = dice_1 + dice_2
         self.execute_dice_result(result)
+        
+        if self.ai_rollout == 0:
+            self.last_dice_rolled = result
 
     def execute_dice_result(self, result):
         self.log = "Dice result = " + str(result)
@@ -800,7 +812,11 @@ class GameState:
             
             print("Moves: " + str(self.moves))
             for p in range(4):
-                print("Player " + str(p) + ": " + str(self.players[p].points(hidden=0)) + " points")
+                if self.players[p].ai is not None:
+                    ai_name = self.players[p].ai.agent_name
+                else:
+                    ai_name = ""
+                print("Player " + str(p) + " (" + str(ai_name) + "): " + str(self.players[p].points(hidden=0)) + " points")
 
         return self.check_end_game()
     
@@ -923,7 +939,7 @@ class GameState:
             for key in config.card_types:
                 if self.players[self.player_turn].available_cards({key: 4}):
                     for key2 in config.card_types:
-                        if key != key2:
+                        if key != key2 and self.resource_available_port_trade(key2):
                             moves.append((config.TRADE_41, (key, key2)))
             # Port Trades
             for p in range(9):
@@ -932,12 +948,12 @@ class GameState:
                         for key in config.card_types:
                             if self.players[self.player_turn].available_cards({key: 3}):
                                 for key2 in config.card_types:
-                                    if key != key2:
+                                    if key != key2 and self.resource_available_port_trade(key2):
                                         moves.append((config.PORT_TRADE, (p, key, key2)))
                     else:
                         if self.players[self.player_turn].available_cards({self.ports[p]: 2}):
                             for key2 in config.card_types:
-                                if self.ports[p] != key2:
+                                if self.ports[p] != key2 and self.resource_available_port_trade(key2):
                                     moves.append((config.PORT_TRADE, (p, self.ports[p], key2)))
             # Buy Special Card
             if len(self.special_cards) > 0:
@@ -1063,10 +1079,14 @@ class GameState:
             else:
                 self.handle_cancel_trade()
               
-        if self.ai_rollout == 0 and move[0] in [config.BUY_SPECIAL_CARD, config.STEAL_FROM_HOUSE, config.THROW_DICE]:
-            self.remove_ai_trees()
-        elif self.ai_rollout == 0:  
-            self.descend_trees(move)
+        if self.ai_rollout == 0:
+            if move[0] in [config.BUY_SPECIAL_CARD, config.STEAL_FROM_HOUSE]:
+                self.remove_ai_trees()
+            elif move[0] == config.THROW_DICE:
+                self.descend_trees((config.THROW_DICE,))
+                self.descend_trees((config.THROW_DICE, self.last_dice_rolled))
+            else:  
+                self.descend_trees(move)
 
     def descend_trees(self, move):
         for p in self.players:

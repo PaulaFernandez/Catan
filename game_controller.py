@@ -309,6 +309,7 @@ class GameController:
             click_action = self.check_click_dice(pos)
             if click_action is not None:
                 self.game.execute_dice_result(click_action)
+                self.game.last_dice_rolled = click_action
                 self.controller_state = 1
 
         elif self.controller_state == 11:
