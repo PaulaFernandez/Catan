@@ -7,8 +7,8 @@ import config
 from agent_nn import Agent_NN
 
 training_passes = [('start', 'value'), ('start', 'policy'), ('general', 'value'), ('general', 'policy')]
-agents_to_train = [11, 10]
-new_agents = [12, 13]
+agents_to_train = [12, 11]
+new_agents = [14, 15]
 
 # New combinations
 agents = []

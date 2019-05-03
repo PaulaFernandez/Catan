@@ -935,15 +935,11 @@ class GameState:
             if self.players[self.player_turn].available_resources('road'):
                 for r in self.valid_roads():
                     moves.append((config.BUILD_ROAD, r))
-            # Trade 4 - 1
-            for key in config.card_types:
-                if self.players[self.player_turn].available_cards({key: 4}):
-                    for key2 in config.card_types:
-                        if key != key2 and self.resource_available_port_trade(key2):
-                            moves.append((config.TRADE_41, (key, key2)))
             # Port Trades
+            ports_available = set()
             for p in range(9):
                 if self.port_belongs_to_player(p):
+                    ports_available.add(self.ports[p])
                     if self.ports[p] == config.GENERIC:
                         for key in config.card_types:
                             if self.players[self.player_turn].available_cards({key: 3}):
@@ -955,6 +951,13 @@ class GameState:
                             for key2 in config.card_types:
                                 if self.ports[p] != key2 and self.resource_available_port_trade(key2):
                                     moves.append((config.PORT_TRADE, (p, self.ports[p], key2)))
+            # Trade 4 - 1
+            if config.GENERIC not in ports_available:
+                for key in config.card_types:
+                    if self.players[self.player_turn].available_cards({key: 4}):
+                        for key2 in config.card_types:
+                            if key != key2 and self.resource_available_port_trade(key2):
+                                moves.append((config.TRADE_41, (key, key2)))
             # Buy Special Card
             if len(self.special_cards) > 0:
                 if self.players[self.player_turn].available_resources('special_card'):
@@ -1080,8 +1083,14 @@ class GameState:
                 self.handle_cancel_trade()
               
         if self.ai_rollout == 0:
-            if move[0] in [config.BUY_SPECIAL_CARD, config.STEAL_FROM_HOUSE]:
+            if move[0] == config.STEAL_FROM_HOUSE:
                 self.remove_ai_trees()
+            elif move[0] == config.BUY_SPECIAL_CARD:
+                for p in self.players:
+                    if p == self.player_turn and p.ai is not None:
+                        p.ai.descend_tree(move)
+                    elif p.ai is not None:
+                        p.ai.remove_tree()
             elif move[0] == config.THROW_DICE:
                 self.descend_trees((config.THROW_DICE,))
                 self.descend_trees((config.THROW_DICE, self.last_dice_rolled))

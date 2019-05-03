@@ -342,6 +342,10 @@ class MCTS_AI:
                 node.add_probabilities(prediction[1][0])
 
         return node, prediction
+        
+    def expansion_possibilities(self, state, node):
+        expansion_nodes = node.check_untried(state)
+        return expansion_nodes        
     
     def determinization(self, state):
         # Rivals cards
@@ -402,7 +406,7 @@ class MCTS_AI:
         if self.rootnode is None:
             self.rootnode = Node(rootstate.get_player_moving())
         else:
-            iterations_done = self.rootnode.N
+            iterations_done = int(self.rootnode.N / config.EXPANSION_STEPS) 
             self.rootnode.current_player = rootstate.get_player_moving()
         
         if len(self.rootnode.get_possible_moves(rootstate)) == 1:
@@ -432,34 +436,42 @@ class MCTS_AI:
             # Select
             node, expansion_nodes = self.select(state, node, (i / self.itermax) * (i / self.itermax))
             
-            # Expand
-            if expansion_nodes != []: # Otherwise this is a terminal Node
-                node, prediction = self.expand(state, node, expansion_nodes)
+            for j in range(config.EXPANSION_STEPS):
+                # Expand
+                if expansion_nodes != []: # Otherwise this is a terminal Node
+                    node, prediction = self.expand(state, node, expansion_nodes)
 
-            # Backpropagate
-            last_node_player = node.current_player
-            if state.game_phase == config.PHASE_END_GAME:
-                expansion_result = np.zeros(4)
-                for p in range(4):
-                    p_order = (4 + p - last_node_player) % 4
-                    expansion_result[p_order] = state.ai_get_result(p)
-            else:
-                expansion_result = [None, None, None, None]
-                expansion_result[0] = prediction[0][0][0]
-            while node != None: # backpropagate from the expanded node and work back to the root node
-                p_order = (4 + node.current_player - last_node_player) % 4
-                
-                if expansion_result[p_order] is None:
-                    prediction = self.agent.predict(state, node.current_player, self, determined = 1)
-                    expansion_result[p_order] = prediction[0][0][0]
+                # Backpropagate
+                last_node_player = node.current_player
+                if state.game_phase == config.PHASE_END_GAME:
+                    expansion_result = np.zeros(4)
+                    for p in range(4):
+                        p_order = (4 + p - last_node_player) % 4
+                        expansion_result[p_order] = state.ai_get_result(p)
+                else:
+                    expansion_result = [None, None, None, None]
+                    expansion_result[0] = prediction[0][0][0]
                     
-                node.update(expansion_result[p_order]) # state is terminal. Update node with result from POV of node.playerJustMoved
-                node = node.parentNode
+                backprop_node = node
+                while backprop_node != None: # backpropagate from the expanded node and work back to the root node
+                    p_order = (4 + backprop_node.current_player - last_node_player) % 4
+                    
+                    if expansion_result[p_order] is None:
+                        prediction = self.agent.predict(state, backprop_node.current_player, self, determined = 1)
+                        expansion_result[p_order] = prediction[0][0][0]
+                        
+                    backprop_node.update(expansion_result[p_order]) # state is terminal. Update node with result from POV of node.playerJustMoved
+                    backprop_node = backprop_node.parentNode
+                    
+                expansion_nodes = self.expansion_possibilities(state, node)
+                
+                if expansion_nodes == []: # It was a terminal node
+                    break
                 
             if self.deteministic_play is True and i > self.itermax / 2.0:
                 s_children = sorted(self.rootnode.childNodes, key = lambda c: c.N)
                 
-                if len(s_children) < 2 or s_children[-1].N > s_children[-2].N + self.itermax - i:
+                if len(s_children) < 2 or s_children[-1].N > s_children[-2].N + config.EXPANSION_STEPS * (self.itermax - i):
                     move = s_children[-1].move
                     
                     print (self.rootnode.ChildrenToString())

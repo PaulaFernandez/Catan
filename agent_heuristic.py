@@ -94,10 +94,7 @@ class Agent_Heuristic():
                 else:
                     return numbers_output[number]
             
-    
     def extra_value(self):
-        numbers_output = {2: 1, 3: 2, 4: 3, 5: 4, 6: 5, 8: 5, 9: 4, 10: 3, 11: 2, 12: 1}
-    
         extra_value = []
         
         for p in range(4):
@@ -125,6 +122,24 @@ class Agent_Heuristic():
                     if self.state.available_settlement_spot(v):
                         has_road_in_pot_sett = 1
                         break
+                        
+            # Has road 1 step from potential settlement
+            has_road_at_1_step = 0
+            if has_road_in_pot_sett == 0:
+                for r in self.state.players[p].roads:
+                    for v in r:
+                        for x in config.roads_from_settlement[v]:
+                            if v == x[0]:
+                                if self.state.available_settlement_spot(x[1]):
+                                    has_road_at_1_step = 1
+                                    break
+                            elif v == x[1]:
+                                if self.state.available_settlement_spot(x[0]):
+                                    has_road_at_1_step = 1
+                                    break
+                    if has_road_at_1_step == 1:
+                        break
+                                    
             
             # Cards In Hand
             if self.state.players[p].available_resources('city'):
@@ -135,6 +150,8 @@ class Agent_Heuristic():
                 estimated_value += 0.1
             elif has_road_in_pot_sett == 1:
                 estimated_value += 0.05
+            elif has_road_at_1_step == 1:
+                estimated_value += 0.02
             if self.state.players[p].available_resources('road'):
                 estimated_value += 0.025
             if self.state.players[p].available_resources('special_card'):
