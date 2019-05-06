@@ -41,7 +41,7 @@ class DrawScreen:
     def draw_robber(self, tile_num):
         self.draw(config.tile_position[tile_num][0] + config.number_x_offset, config.tile_position[tile_num][1] + config.number_y_offset, config.robber['img'], config.numbers_size)
 
-    def draw_summary(self, players, player_turn, log, stage):
+    def draw_summary(self, players, player_turn, log, stage, players_trade):
         for key, player_x in enumerate(players):
             x, y = config.player_stats_x, config.player_stats_y + key * (config.player_stats_y + config.player_stats_height)
 
@@ -109,6 +109,27 @@ class DrawScreen:
         if stage in [config.PHASE_TRADE_OFFER, config.PHASE_TRADE_RECEIVE, config.PHASE_TRADE_RESPOND]:
             self.draw(config.accept_trade_position[0], config.accept_trade_position[1], config.accept_trade['img'], config.accept_trade_size)
             self.draw(config.reject_trade_position[0], config.reject_trade_position[1], config.reject_trade['img'], config.reject_trade_size)
+
+        # Trade Summary
+        if stage == config.PHASE_TRADE_RESPOND:
+            pygame.draw.rect(self.screen, config.main_color, (config.player_screen_x, config.continue_game_position[1], config.player_stats_width, config.player_screen_height + 10), config.thickness)
+            label_msg = self.font.render("You Receive:", 1, config.main_color)
+            self.screen.blit(label_msg, (config.player_screen_x + 10, config.continue_game_position[1] + 10))
+
+            i = 0
+            for resource, number in players_trade['R1'].items():
+                for _ in range(number):
+                    self.draw(150 + 50 * i, config.continue_game_position[1] + 10, config.card_types[resource]['img'], config.card_size)
+                    i += 1
+
+            label_msg = self.font.render("You Give:", 1, config.main_color)
+            self.screen.blit(label_msg, (config.player_screen_x + 10, config.continue_game_position[1] + 60))
+
+            i = 0
+            for resource, number in players_trade['R2'].items():
+                for _ in range(number):
+                    self.draw(150 + 50 * i, config.continue_game_position[1] + 60, config.card_types[resource]['img'], config.card_size)
+                    i += 1
 
     def draw_current_player(self, player):
         def draw_card(i, img, label):
@@ -180,7 +201,7 @@ class DrawScreen:
         self.draw(config.big_dice_x1, config.big_dice_y, 'img/dice' + str(dices[0]) + '.png', config.big_dice_size)
         self.draw(config.big_dice_x2, config.big_dice_y, 'img/dice' + str(dices[1]) + '.png', config.big_dice_size)
 
-    def draw_board(self, tiles, numbers, ports, robber_tile, players, player_turn, log, dices, perspective, stage):
+    def draw_board(self, tiles, numbers, ports, robber_tile, players, player_turn, log, dices, perspective, stage, players_trade, draw_player_info):
         self.screen.fill((0, 0, 0))
 
         self.draw_tiles(tiles)
@@ -188,11 +209,12 @@ class DrawScreen:
         self.draw_ports(ports)
         self.draw_robber(robber_tile)
         self.draw_improvements(players)
-        self.draw_summary(players, player_turn, log, stage)
-        if perspective is not None:
-            self.draw_current_player(players[perspective])
-        else:
-            self.draw_current_player(players[player_turn])
+        self.draw_summary(players, player_turn, log, stage, players_trade)
+        if draw_player_info:
+            if perspective is not None:
+                self.draw_current_player(players[perspective])
+            else:
+                self.draw_current_player(players[player_turn])
         # self.draw_position_squares()
         # self.draw_vertices()
 

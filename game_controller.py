@@ -36,6 +36,14 @@ class GameController:
 
     def check_state(self):
         try:
+            if self.game.boardgame_state == 0:
+                if self.game.players[self.game.get_player_moving()].is_human == 0:
+                    self.game.dices = (0, 0)
+                    move, _, _ = self.game.players[self.game.get_player_moving()].ai.move(self.game)
+                    self.game.ai_do_move(move)
+                    self.redraw()
+                    return
+
             if self.game.boardgame_state == 1:
                 if self.game.game_phase == config.PHASE_THROW_DICE:
                     self.controller_state = 10
@@ -79,6 +87,10 @@ class GameController:
 
     def redraw(self):
         if self.controller_state == 1:
+            draw_player_info = False
+            if self.game.players[self.game.get_player_moving()].ai is None or self.game.all_ai() is True:
+                draw_player_info = True
+
             self.draw_tool.draw_board(self.game.tiles,
                                     self.game.numbers,
                                     self.game.ports,
@@ -88,7 +100,9 @@ class GameController:
                                     self.game.log,
                                     self.game.dices,
                                     self.game.get_player_moving(),
-                                    self.game.game_phase)
+                                    self.game.game_phase,
+                                    self.game.players_trade,
+                                    draw_player_info)
         elif self.controller_state == 0:
             self.draw_tool.draw_start()
         elif self.controller_state == 2:
@@ -353,7 +367,7 @@ class GameController:
                     self.game.descend_trees((config.THROW_DICE, self.game.last_dice_rolled))
                 elif self.check_click(pos) == ('special_card', config.KNIGHT):
                     self.game.handle_play_knight()
-                    self.descend_trees((config.PLAY_SPECIAL_CARD, config.KNIGHT))
+                    self.game.descend_trees((config.PLAY_SPECIAL_CARD, config.KNIGHT))
             elif self.game.game_phase == config.PHASE_WAIT:
                 click_port = self.click_in_port(pos)
                 if self.check_click(pos) == ('action', config.CONTINUE_GAME):
@@ -379,7 +393,7 @@ class GameController:
                     self.game.start_4_1_trade()
                 elif self.check_click(pos) == ('special_card', config.KNIGHT):
                     self.game.handle_play_knight()
-                    self.descend_trees((config.PLAY_SPECIAL_CARD, config.KNIGHT))
+                    self.game.descend_trees((config.PLAY_SPECIAL_CARD, config.KNIGHT))
                 elif self.check_click(pos) == ('special_card', config.MONOPOLY):
                     self.game.game_phase = config.PHASE_MONOPOLY
                     self.game.log = "Choose resource"
@@ -387,12 +401,12 @@ class GameController:
                     self.game.game_phase = config.PHASE_ROAD_BUILDING
                     self.game.log = "Build roads"
                     self.game.roads_in_road_building = 2
-                    self.descend_trees((config.PLAY_SPECIAL_CARD, config.ROAD_BUILDING))
+                    self.game.descend_trees((config.PLAY_SPECIAL_CARD, config.ROAD_BUILDING))
                 elif self.check_click(pos) == ('special_card', config.YEAR_OF_PLENTY):
                     self.game.game_phase = config.PHASE_YEAR_OF_PLENTY
                     self.game.log = "Choose resources"
                     self.game.resources_in_year_of_plenty = 2
-                    self.descend_trees((config.PLAY_SPECIAL_CARD, config.YEAR_OF_PLENTY))
+                    self.game.descend_trees((config.PLAY_SPECIAL_CARD, config.YEAR_OF_PLENTY))
                 elif self.check_click(pos)[1] == config.TRADE_OFFER:
                     self.game.start_players_trade(self.check_click(pos)[2])
                 elif click_port[0] == 'port':
@@ -402,12 +416,12 @@ class GameController:
                 click = self.check_click(pos)
                 if click[0] == 'card':
                     self.game.handle_discard(click[1])
-                    self.descend_trees((config.DISCARD, click[1]))
+                    self.game.descend_trees((config.DISCARD, click[1]))
             elif self.game.game_phase == config.PHASE_MOVE_ROBBER:
                 click = self.check_click(pos)
                 if click[0] == 'tile':
                     self.game.handle_move_robber(click[1])
-                    self.descend_trees((config.MOVE_ROBBER, click[1]))
+                    self.game.descend_trees((config.MOVE_ROBBER, click[1]))
             elif self.game.game_phase == config.PHASE_STEAL_CARD:
                 click = self.click_in_vertex(pos)
                 if click[0] == 'vertex':
@@ -425,7 +439,7 @@ class GameController:
                 click = self.check_click(pos)
                 if click[0] == 'card':
                     self.game.handle_play_monopoly(click[1])
-                    self.descend_trees((config.PLAY_SPECIAL_CARD, config.MONOPOLY, click[1]))
+                    self.game.descend_trees((config.PLAY_SPECIAL_CARD, config.MONOPOLY, click[1]))
             elif self.game.game_phase == config.PHASE_ROAD_BUILDING:
                 if self.check_click(pos) == ('action', config.BUILD_ROAD):
                     self.game.current_action = config.BUILD_ROAD
@@ -433,7 +447,7 @@ class GameController:
                 click = self.check_click(pos)
                 if click[0] == 'card':
                     self.game.handle_play_year_of_plenty(click[1])
-                    self.descend_trees((config.RESOURCE_YEAR_PLENTY, click[1]))
+                    self.game.descend_trees((config.RESOURCE_YEAR_PLENTY, click[1]))
             elif self.game.game_phase == config.PHASE_TRADE_OFFER:
                 click = self.check_click(pos)
                 if click[0] == 'card':
@@ -454,10 +468,10 @@ class GameController:
                 click = self.check_click(pos)
                 if click == ('action', config.ACCEPT_TRADE):
                     self.game.execute_players_trade()
-                    self.descend_trees((config.TRADE_RESPONSE, 1))
+                    self.game.descend_trees((config.TRADE_RESPONSE, 1))
                 elif click == ('action', config.REJECT_TRADE):
                     self.game.handle_cancel_trade()
-                    self.descend_trees((config.TRADE_RESPONSE, 0))
+                    self.game.descend_trees((config.TRADE_RESPONSE, 0))
 
             if self.check_click(pos) == ('action', config.SAVE_GAME):
                 with open('game.pkl', 'wb') as output:
@@ -494,17 +508,17 @@ class GameController:
             if self.game.current_action == config.BUILD_SETTLEMENT:
                 _, vertex_released = self.check_release(pos)
                 self.game.handle_build_settlement(vertex_released)
-                self.descend_trees((config.BUILD_SETTLEMENT, vertex_released))
+                self.game.descend_trees((config.BUILD_SETTLEMENT, vertex_released))
 
             elif self.game.current_action == config.BUILD_ROAD:
                 _, road_released = self.check_release(pos)
                 self.game.handle_build_road(road_released)
-                self.descend_trees((config.BUILD_ROAD, road_released))
+                self.game.descend_trees((config.BUILD_ROAD, road_released))
 
             elif self.game.current_action == config.BUILD_CITY:
                 _, vertex_released = self.check_release(pos)
                 self.game.handle_build_city(vertex_released)
-                self.descend_trees((config.BUILD_CITY, vertex_released))
+                self.game.descend_trees((config.BUILD_CITY, vertex_released))
 
         self.redraw()
         

@@ -67,8 +67,6 @@ class GameState:
                         mcts_exploration = game_config['MCTS_EXPLORATION']
                 
                 self.players[i].ai = MCTS_AI(i, selected_agent[1], mcts_exploration, selected_agent[0])
-
-        self.max_road = {0: 1, 1: 1, 2: 1, 3: 1}
         
         # Starting player
         self.player_turn = choice([0, 1, 2, 3])
@@ -94,7 +92,7 @@ class GameState:
         for key in ["special_cards", "special_cards_played", "players_to_discard", "houses_to_steal_from"]:
             result.__dict__[key] = self.__dict__[key][:]
         
-        for key in ["players", "trades_proposed", "max_road", "players_trade"]:
+        for key in ["players", "trades_proposed", "players_trade"]:
             result.__dict__[key] = deepcopy(self.__dict__[key])
         
         return result
@@ -142,6 +140,13 @@ class GameState:
     
     def initialise_trade(self):
         self.players_trade = {'P1': None, 'R1': None, 'P2': None, 'R2': None}
+
+    def all_ai(self):
+        for p in range(4):
+            if self.players[p].ai is None:
+                return False
+
+        return True
     
     def add_resources_ai(self, cards, player_id):
         if self.ai_rollout == 0:
@@ -450,22 +455,22 @@ class GameState:
 
         all_roads = self.calculate_all_roads(self.players[player_id].roads, player_id)
         road_lengths = [len(x['sections']) for x in all_roads]
-        self.max_road[player_id] = max(road_lengths)
+        self.players[player_id].longest_road = max(road_lengths)
 
         for player_x in self.players:
             if player_x.longest_road_badge == 1:
                 current_holder = player_x.player_id
 
-        if self.max_road[player_id] < 5:
+        if self.players[player_id].longest_road < 5:
             if current_holder == player_id:
                 self.players[player_id].longest_road_badge = 0
 
                 long_road = [(-1, 0)]
                 for player_x in self.players:
-                    if self.max_road[player_x.player_id] > long_road[0][1]:
-                        long_road = [(player_x.player_id, self.max_road[player_x.player_id])]
-                    elif self.max_road[player_x.player_id] == long_road[0][1]:
-                        long_road.append((player_x.player_id, self.max_road[player_x.player_id]))
+                    if self.players[player_x.player_id].longest_road > long_road[0][1]:
+                        long_road = [(player_x.player_id, self.players[player_x.player_id].longest_road)]
+                    elif self.players[player_x.player_id].longest_road == long_road[0][1]:
+                        long_road.append((player_x.player_id, self.players[player_x.player_id].longest_road))
 
                 if len(long_road) == 1 and long_road[0][0] != -1:
                     self.players[long_road[0][0]].longest_road_badge = 1
@@ -474,7 +479,7 @@ class GameState:
         else:
             if current_holder == -1:
                 self.players[player_id].longest_road_badge = 1
-            elif self.max_road[current_holder] >= self.max_road[player_id]:
+            elif self.players[current_holder].longest_road >= self.players[player_id].longest_road:
                 return
             else:
                 self.players[current_holder].longest_road_badge = 0
@@ -708,7 +713,8 @@ class GameState:
                 self.players[self.player_turn].execute_trade()
                 self.add_resources_ai(self.players[self.player_turn].current_trade['resource_received'], self.player_turn)
                 self.remove_resources_ai(self.players[self.player_turn].current_trade['resource_offered'], self.player_turn)
-            self.players[self.player_turn].initialize_trade()
+            
+             self.players[self.player_turn].initialize_trade()
 
             self.game_phase = config.PHASE_WAIT
             self.log = "Choose action"
