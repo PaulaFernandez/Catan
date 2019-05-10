@@ -213,7 +213,7 @@ class MCTS_AI:
         for p in range(4):
             if p != self.player_id:
                 self.rivals_info[p] = {'cards': set([(0, 0, 0, 0, 0)]),
-                                       'special_cards': 0}
+                                       'special_cards': [[], []]}
 
     def __deepcopy__(self, memo):
         cls = self.__class__
@@ -288,12 +288,56 @@ class MCTS_AI:
                 cards_x = tuple(cards_x)
                 new_set.add(cards_x)
         self.rivals_info[player_id]['cards'] = new_set
+        
+    def special_cards_probability(self, state):
+        all_special_cards = config.special_cards_vector[:]
+        for c in state.special_cards_played:
+            all_special_cards.remove(c)
+        
+        remaining_count = np.array([0, 0, 0, 0, 0])
+        for c in config.special_cards.keys():
+            remaining_count[c] = all_special_cards.count(c)
             
-    def add_special_card_rival(self, player_id):
-        self.rivals_info[player_id]['special_cards'] += 1
+        return remaining_count / np.sum(remaining_count)
+        
+    def normalize_probs(self, vector):
+        vector = np.array(vector)
+        return vector / np.sum(vector)
             
-    def remove_special_card_rival(self, player_id):
-        self.rivals_info[player_id]['special_cards'] -= 1
+    def add_special_card_rival(self, player_id, state):
+        probabilities = self.special_cards_probability(state)
+        
+        if len(self.rivals_info[player_id]['special_cards'][0]) == 0:
+            self.rivals_info[player_id]['special_cards'] = [[[x] for x in range(5)], probabilities]
+            return
+        
+        new_sp_cards = [[], []]
+        for i in range(len(self.rivals_info[player_id]['special_cards'][0])):
+            for c, p in enumerate(probabilities):
+                if p > 0.0:
+                    cards_sample = self.rivals_info[player_id]['special_cards'][0][i] + [c]
+                    new_sp_cards[0].append(cards_sample)
+                    new_sp_cards[1].append(p * self.rivals_info[player_id]['special_cards'][1][i])
+                    
+        self.rivals_info[player_id]['special_cards'] = new_sp_cards
+            
+    def remove_special_card_rival(self, player_id, card):
+        if len(self.rivals_info[player_id]['special_cards'][0]) > 0 and len(self.rivals_info[player_id]['special_cards'][0][0]) == 1:
+            self.rivals_info[player_id]['special_cards'] = [[], []]
+            return
+        
+        new_sp_cards = [[], []]
+        for i in range(len(self.rivals_info[player_id]['special_cards'][0])):
+            if card in self.rivals_info[player_id]['special_cards'][0][i]:
+                cards_sample = self.rivals_info[player_id]['special_cards'][0][i]
+                cards_sample.remove(card)
+                new_sp_cards[0].append(cards_sample) 
+                new_sp_cards[1].append(self.rivals_info[player_id]['special_cards'][1][i])
+                
+        probs = self.normalize_probs(new_sp_cards[1])
+        new_sp_cards[1] = probs
+        
+        self.rivals_info[player_id]['special_cards'] = new_sp_cards        
         
     def get_undetermined_resources_rivals(self, player):
         min_cards = [100, 100, 100, 100, 100]
@@ -345,7 +389,18 @@ class MCTS_AI:
         
     def expansion_possibilities(self, state, node):
         expansion_nodes = node.check_untried(state)
-        return expansion_nodes        
+        return expansion_nodes    
+    
+    def decrease_probs_special_card(self, card):
+        for p in range(4):
+            if p != self.player_id:
+                for i, card_set in enumerate(self.rivals_info[p]['special_cards'][0]):
+                    if card in card_set:
+                        self.rivals_info[p]['special_cards'][1][i] = (1 - 0.1 * card_set.count(card)) * self.rivals_info[p]['special_cards'][1][i]
+                        
+                probs = self.normalize_probs(self.rivals_info[p]['special_cards'][1])
+                
+                self.rivals_info[p]['special_cards'][1] = probs      
     
     def determinization(self, state):
         # Rivals cards
@@ -374,13 +429,23 @@ class MCTS_AI:
             except:
                 raise Exception("c: " + str(c) + ", special_cards: " + str(state.special_cards))
 
-        shuffle(state.special_cards)
-
         for p in range(4):
             if p != self.player_id:
-                state.players[p].special_cards = []
-                for _ in range(self.rivals_info[p]['special_cards']):
-                    state.players[p].special_cards.append(state.special_cards.pop())
+                if len(self.rivals_info[p]['special_cards'][0]) > 0:
+                    cards_idx = np.random.choice(range(len(self.rivals_info[p]['special_cards'][0])), p = self.rivals_info[p]['special_cards'][1])
+                    cards_realization = self.rivals_info[p]['special_cards'][0][cards_idx]
+                    state.players[p].special_cards = []
+                    for c in cards_realization:
+                        state.players[p].special_cards.append(c)
+                        try:
+                            state.special_cards.remove(c)
+                        except:
+                            self.decrease_probs_special_card(c)
+                            return False
+
+        shuffle(state.special_cards)
+                        
+        return True
 
     def calc_posteriors(self, rootnode, rootstate):
         if rootstate.game_phase == config.PHASE_INITIAL_SETTLEMENT or rootstate.game_phase == config.PHASE_INITIAL_ROAD:
@@ -428,9 +493,9 @@ class MCTS_AI:
                 state.ai_rollout = 1
 
                 # Determinization
-                self.determinization(state)
+                success = self.determinization(state)
                 
-                if state.game_phase != config.PHASE_END_GAME:
+                if success and state.game_phase != config.PHASE_END_GAME:
                     valid_determinization = True
             
             # Select

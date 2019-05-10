@@ -9,6 +9,10 @@ class Agent_Heuristic():
         self.determined = None
         self.points = None
         
+        self.cache_tile_output = {}
+        self.robber_correction = 0.7
+        self.numbers_output = {2: 1, 3: 2, 4: 3, 5: 4, 6: 5, 8: 5, 9: 4, 10: 3, 11: 2, 12: 1}
+        
     def predict(self, state, perspective, mcts, determined = 0):
         self.state = state
         self.perspective = perspective
@@ -84,15 +88,19 @@ class Agent_Heuristic():
         return np.array(points)
         
     def get_tile_output(self, tile):
-        numbers_output = {2: 1, 3: 2, 4: 3, 5: 4, 6: 5, 8: 5, 9: 4, 10: 3, 11: 2, 12: 1}
-        robber_correction = 0.7
+        if tile in self.cache_tile_output:
+            if self.state.robber_tile == tile:
+                return self.robber_correction * self.cache_tile_output[tile]
+            else:
+                return self.cache_tile_output[tile]
         
         for number, tile_n in self.state.numbers:
             if tile == tile_n:
+                self.cache_tile_output[tile] = self.numbers_output[number]
                 if self.state.robber_tile == tile:
-                    return robber_correction * numbers_output[number]
+                    return self.robber_correction * self.numbers_output[number]
                 else:
-                    return numbers_output[number]
+                    return self.numbers_output[number]
             
     def extra_value(self):
         extra_value = []

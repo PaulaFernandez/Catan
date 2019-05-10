@@ -36,6 +36,8 @@ class GameState:
         self.dice_thrown = 0
         self.moves = 0
         self.last_dice_rolled = 0
+        self.resources_offered = []
+        self.resources_received = []
         
         if game_config is not None:
             self.type_game = game_config['TYPE_OF_GAME']
@@ -187,13 +189,13 @@ class GameState:
         if self.ai_rollout == 0:
             for p in range(4):
                 if p != player_id and self.players[p].ai != None:
-                    self.players[p].ai.add_special_card_rival(player_id)
+                    self.players[p].ai.add_special_card_rival(player_id, self)
 
-    def remove_special_card_ai(self, player_id):
+    def remove_special_card_ai(self, player_id, card):
         if self.ai_rollout == 0:
             for p in range(4):
                 if p != player_id and self.players[p].ai != None:
-                    self.players[p].ai.remove_special_card_rival(player_id)
+                    self.players[p].ai.remove_special_card_rival(player_id, card)
 
     def generate_numbers(self):
         numbers = config.roll_numbers
@@ -552,7 +554,7 @@ class GameState:
                 if self.roads_in_road_building == 0:
                     self.players[self.player_turn].use_special_card(config.ROAD_BUILDING)
                     self.special_cards_played.append(config.ROAD_BUILDING)
-                    self.remove_special_card_ai(self.player_turn)
+                    self.remove_special_card_ai(self.player_turn, config.ROAD_BUILDING)
                     self.special_card_played_in_turn = 1
 
                     self.game_phase = config.PHASE_WAIT
@@ -714,7 +716,7 @@ class GameState:
                 self.add_resources_ai(self.players[self.player_turn].current_trade['resource_received'], self.player_turn)
                 self.remove_resources_ai(self.players[self.player_turn].current_trade['resource_offered'], self.player_turn)
             
-             self.players[self.player_turn].initialize_trade()
+            self.players[self.player_turn].initialize_trade()
 
             self.game_phase = config.PHASE_WAIT
             self.log = "Choose action"
@@ -766,7 +768,7 @@ class GameState:
             self.check_largest_army_badge()
             self.check_end_game()
 
-        self.remove_special_card_ai(self.player_turn)
+        self.remove_special_card_ai(self.player_turn, config.KNIGHT)
         self.special_card_played_in_turn = 1
         self.game_phase = config.PHASE_MOVE_ROBBER
         self.log = "Player " + str(self.player_turn + 1) + ": move robber"
@@ -781,7 +783,7 @@ class GameState:
             self.add_resources_ai({resource: given_cards}, self.player_turn)
             number += given_cards
 
-        self.remove_special_card_ai(self.player_turn)
+        self.remove_special_card_ai(self.player_turn, config.MONOPOLY)
         self.players[self.player_turn].add_resources({resource: number})
         self.special_card_played_in_turn = 1
         self.game_phase = config.PHASE_WAIT
@@ -798,7 +800,7 @@ class GameState:
             if self.resources_in_year_of_plenty == 0:
                 self.players[self.player_turn].use_special_card(config.YEAR_OF_PLENTY)
                 self.special_cards_played.append(config.YEAR_OF_PLENTY)
-                self.remove_special_card_ai(self.player_turn)
+                self.remove_special_card_ai(self.player_turn, config.YEAR_OF_PLENTY)
                 self.special_card_played_in_turn = 1
                 self.game_phase = config.PHASE_WAIT
                 self.log = "Choose action"
@@ -812,6 +814,9 @@ class GameState:
         self.trades_offered_in_turn = 0
         self.trades_proposed = []
         self.moves += 1
+        
+        self.resources_offered = []
+        self.resources_received = []
         
         if self.ai_rollout == 0:
             self.remove_ai_trees()
@@ -948,21 +953,21 @@ class GameState:
                     ports_available.add(self.ports[p])
                     if self.ports[p] == config.GENERIC:
                         for key in config.card_types:
-                            if self.players[self.player_turn].available_cards({key: 3}):
+                            if key not in self.resources_received and self.players[self.player_turn].available_cards({key: 3}):
                                 for key2 in config.card_types:
-                                    if key != key2 and self.resource_available_port_trade(key2):
+                                    if key != key2 and key2 not in self.resources_offered and self.resource_available_port_trade(key2):
                                         moves.append((config.PORT_TRADE, (p, key, key2)))
                     else:
-                        if self.players[self.player_turn].available_cards({self.ports[p]: 2}):
+                        if self.ports[p] not in self.resources_received and self.players[self.player_turn].available_cards({self.ports[p]: 2}):
                             for key2 in config.card_types:
-                                if self.ports[p] != key2 and self.resource_available_port_trade(key2):
+                                if self.ports[p] != key2 and key2 not in self.resources_offered and self.resource_available_port_trade(key2):
                                     moves.append((config.PORT_TRADE, (p, self.ports[p], key2)))
             # Trade 4 - 1
             if config.GENERIC not in ports_available:
                 for key in config.card_types:
-                    if self.players[self.player_turn].available_cards({key: 4}):
+                    if key not in self.resources_received and self.players[self.player_turn].available_cards({key: 4}):
                         for key2 in config.card_types:
-                            if key != key2 and self.resource_available_port_trade(key2):
+                            if key != key2 and key2 not in self.resources_offered and self.resource_available_port_trade(key2):
                                 moves.append((config.TRADE_41, (key, key2)))
             # Buy Special Card
             if len(self.special_cards) > 0:
@@ -988,10 +993,10 @@ class GameState:
                         if marginal_card is not None:
                             for card_give in cards_to_offer:
                                 for num_cards_give in range(1, 3):
-                                    if self.players[self.player_turn].available_cards({card_give: num_cards_give}):
+                                    if card_give not in self.resources_received and self.players[self.player_turn].available_cards({card_give: num_cards_give}):
                                         for p in range(4):
                                             if p != self.player_turn:
-                                                if self.players[p].available_cards({marginal_card: 1}):
+                                                if marginal_card not in self.resources_offered and self.players[p].available_cards({marginal_card: 1}):
                                                     if (config.TRADE_OFFER, p, (card_give, num_cards_give), (marginal_card, 1)) not in self.trades_proposed:
                                                         moves.append((config.TRADE_OFFER, p, (card_give, num_cards_give), (marginal_card, 1)))
             # End Turn
@@ -1043,6 +1048,9 @@ class GameState:
             self.start_4_1_trade()
             self.handle_trade(move[1][0])
             self.handle_trade(move[1][1])
+            
+            self.resources_offered.append(move[1][0])
+            self.resources_received.append(move[1][1])
         elif move[0] == config.PORT_TRADE:
             self.start_port_trade(move[1][0])
             if self.ports[move[1][0]] == config.GENERIC:
@@ -1050,6 +1058,9 @@ class GameState:
                 self.handle_trade(move[1][2])
             else:
                 self.handle_trade(move[1][2])
+            
+            self.resources_offered.append(move[1][1])
+            self.resources_received.append(move[1][2])
         elif move[0] == config.MOVE_ROBBER:
             self.handle_move_robber(move[1])
         elif move[0] == config.STEAL_FROM_HOUSE:
