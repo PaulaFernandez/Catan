@@ -877,9 +877,8 @@ class GameState:
         
         elif self.game_phase == config.PHASE_TRADE_RECEIVE:
             if resource_clicked in self.players_trade['R2']:
-                if self.players[self.players_trade['P2']].available_cards({resource_clicked: self.players_trade['R2'][resource_clicked] + 1}):
-                    self.players_trade['R2'][resource_clicked] += 1
-            elif self.players[self.players_trade['P2']].available_cards({resource_clicked: 1}):
+                self.players_trade['R2'][resource_clicked] += 1
+            else:
                 self.players_trade['R2'][resource_clicked] = 1
 
             self.log = "Receiving: "
