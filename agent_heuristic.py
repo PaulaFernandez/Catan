@@ -12,6 +12,7 @@ class Agent_Heuristic():
         self.cache_tile_output = {}
         self.robber_correction = 0.7
         self.numbers_output = {2: 1, 3: 2, 4: 3, 5: 4, 6: 5, 8: 5, 9: 4, 10: 3, 11: 2, 12: 1}
+        self.resources_value = np.array([0.025, 0.035, 0.03, 0.03, 0.03])
         
     def predict(self, state, perspective, mcts, determined = 0):
         self.state = state
@@ -63,16 +64,11 @@ class Agent_Heuristic():
             # Points Cards
             if self.determined == 1 or p == self.mcts.player_id:
                 b += 0.2 * self.state.players[p].special_cards.count(config.VICTORY_POINT)
-                
-            if self.state.players[p].longest_road_badge == 1:
-                b += 0.3
-                
-            #if self.state.players[p].largest_army_badge == 1:
-            #    b += 0.3
             
             base_value.append(b)
             
         base_value = np.array(base_value) + 0.4 * self.army_probs()
+        base_value = np.array(base_value) + 0.4 * self.long_road_probs()
             
         return base_value
     
@@ -89,7 +85,7 @@ class Agent_Heuristic():
         
     def get_tile_output(self, tile):
         if tile in self.cache_tile_output:
-            if self.state.robber_tile == tile:
+            if tile == self.state.robber_tile:
                 return self.robber_correction * self.cache_tile_output[tile]
             else:
                 return self.cache_tile_output[tile]
@@ -97,10 +93,19 @@ class Agent_Heuristic():
         for number, tile_n in self.state.numbers:
             if tile == tile_n:
                 self.cache_tile_output[tile] = self.numbers_output[number]
-                if self.state.robber_tile == tile:
+                if tile == self.state.robber_tile:
                     return self.robber_correction * self.numbers_output[number]
                 else:
                     return self.numbers_output[number]
+                
+    def get_vertex_output(self, vertex):        
+        resources = np.array([0, 0, 0, 0, 0])
+        for tile, vertices in config.tiles_vertex.items():
+            if vertex in vertices:
+                if self.state.tiles[tile] != config.DESERT:
+                    resources[self.state.tiles[tile] - 2] += self.get_tile_output(tile)
+                    
+        return resources
             
     def extra_value(self):
         extra_value = []
@@ -110,26 +115,23 @@ class Agent_Heuristic():
             
             # Resources
             for s in self.state.players[p].settlements:
-                for tile, vertices in config.tiles_vertex.items():
-                    if s in vertices:
-                        if self.state.tiles[tile] != config.DESERT:
-                            resources[self.state.tiles[tile] - 2] += self.get_tile_output(tile)
+                resources += resources + self.get_vertex_output(s)
                         
             for c in self.state.players[p].cities:
-                for tile, vertices in config.tiles_vertex.items():
-                    if c in vertices:
-                        if self.state.tiles[tile] != config.DESERT:
-                            resources[self.state.tiles[tile] - 2] += 2 * self.get_tile_output(tile)
+                resources += resources + 2 * self.get_vertex_output(c)
                             
-            estimated_value = np.sum(np.array([0.025, 0.035, 0.03, 0.03, 0.03]) * resources)
+            estimated_value = np.sum(self.resources_value * resources)
                 
             has_road_in_pot_sett = 0
+            max_value_potential_settl = 0.0
             # Has road in potential settlement
             for r in self.state.players[p].roads:
                 for v in r:
                     if self.state.available_settlement_spot(v):
                         has_road_in_pot_sett = 1
-                        break
+                        v_value = np.sum(self.resources_value * self.get_vertex_output(v))
+                        if v_value > max_value_potential_settl:
+                            max_value_potential_settl = v_value
                         
             # Has road 1 step from potential settlement
             has_road_at_1_step = 0
@@ -152,12 +154,10 @@ class Agent_Heuristic():
             # Cards In Hand
             if self.state.players[p].available_resources('city'):
                 estimated_value += 0.175
-            if self.state.players[p].available_resources('settlement') and has_road_in_pot_sett == 1:
-                estimated_value += 0.175
             elif self.state.players[p].available_resources('settlement'):
-                estimated_value += 0.1
+                estimated_value += 0.1 + 0.15 * max_value_potential_settl
             elif has_road_in_pot_sett == 1:
-                estimated_value += 0.05
+                estimated_value += 0.15 * max_value_potential_settl
             elif has_road_at_1_step == 1:
                 estimated_value += 0.02
             if self.state.players[p].available_resources('road'):
