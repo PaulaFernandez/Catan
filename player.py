@@ -17,6 +17,7 @@ class Player():
         self.settlements = []
         self.cities = []
         self.roads = []
+        self.ports = set()
 
         self.valid_roads = []
         self.current_trade = {}

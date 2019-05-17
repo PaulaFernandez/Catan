@@ -403,7 +403,7 @@ class GameController:
                     self.game.start_players_trade(self.check_click(pos)[2])
                 elif click_port[0] == 'port':
                     self.game.game_phase = config.PHASE_PORTS_TRADE
-                    self.game.start_port_trade(click_port[1])
+                    self.game.start_port_trade(self.game.ports[click_port[1]])
             elif self.game.game_phase == config.PHASE_DISCARD:
                 click = self.check_click(pos)
                 if click[0] == 'card':

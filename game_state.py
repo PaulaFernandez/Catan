@@ -495,6 +495,12 @@ class GameState:
                 player_x.largest_army_badge = 0
 
         self.players[self.player_turn].largest_army_badge = 1
+        
+    def add_port_available(self, vertex):
+        for p, value in config.ports_vertex.items():
+            if vertex in value['vert']:
+                self.players[self.player_turn].ports.add(self.ports[p])
+                return
 
     def handle_build_settlement(self, vertex_released):
         if self.valid_settlement(vertex_released):
@@ -513,6 +519,8 @@ class GameState:
                 #self.calculate_longest_road()
                 self.remove_resources_ai(config.resources['settlement'], self.player_turn)
                 self.check_end_game()
+                
+            self.add_port_available(vertex_released)
 
         self.current_action = -1
 
@@ -596,9 +604,8 @@ class GameState:
                 self.houses_to_steal_from.append(settlement)
 
     def port_belongs_to_player(self, port_id):
-        for vertex in config.ports_vertex[port_id]['vert']:
-            if vertex in self.players[self.player_turn].settlements + self.players[self.player_turn].cities:
-                return True
+        if port_id in self.players[self.player_turn].ports:
+            return True
         return False
 
     def start_4_1_trade(self):
@@ -607,13 +614,13 @@ class GameState:
 
     def start_port_trade(self, port_id):
         if self.port_belongs_to_player(port_id):
-            self.players[self.player_turn].current_trade['type'] = self.ports[port_id]
+            self.players[self.player_turn].current_trade['type'] = port_id
 
-            if self.ports[port_id] == config.GENERIC:
+            if port_id == config.GENERIC:
                 self.log = "Pick resource to offer"
             else:
-                if self.players[self.player_turn].available_cards({self.ports[port_id]: 2}):
-                    self.players[self.player_turn].current_trade['resource_offered'] = {self.ports[port_id]: 2}
+                if self.players[self.player_turn].available_cards({port_id: 2}):
+                    self.players[self.player_turn].current_trade['resource_offered'] = {port_id: 2}
                     self.log = "Pick resource to receive"
                 else:
                     self.game_phase = config.PHASE_WAIT
@@ -946,25 +953,22 @@ class GameState:
                 for r in self.valid_roads():
                     moves.append((config.BUILD_ROAD, r))
             # Port Trades
-            ports_available = set()
-            for p in range(9):
-                if self.port_belongs_to_player(p):
-                    ports_available.add(self.ports[p])
-                    if self.ports[p] == config.GENERIC:
-                        for key in config.card_types:
-                            if key not in self.resources_received and self.players[self.player_turn].available_cards({key: 3}):
-                                for key2 in config.card_types:
-                                    if key != key2 and key2 not in self.resources_offered and self.resource_available_port_trade(key2):
-                                        moves.append((config.PORT_TRADE, (p, key, key2)))
-                    else:
-                        if self.ports[p] not in self.resources_received and self.players[self.player_turn].available_cards({self.ports[p]: 2}):
+            for p in self.players[self.player_turn].ports:
+                if p == config.GENERIC:
+                    for key in config.card_types:
+                        if key not in self.resources_received and key not in self.players[self.player_turn].ports and self.players[self.player_turn].available_cards({key: 3}):
                             for key2 in config.card_types:
-                                if self.ports[p] != key2 and key2 not in self.resources_offered and self.resource_available_port_trade(key2):
-                                    moves.append((config.PORT_TRADE, (p, self.ports[p], key2)))
+                                if key != key2 and key2 not in self.resources_offered and self.resource_available_port_trade(key2):
+                                    moves.append((config.PORT_TRADE, (p, key, key2)))
+                else:
+                    if p not in self.resources_received and self.players[self.player_turn].available_cards({p: 2}):
+                        for key2 in config.card_types:
+                            if p != key2 and key2 not in self.resources_offered and self.resource_available_port_trade(key2):
+                                moves.append((config.PORT_TRADE, (p, p, key2)))
             # Trade 4 - 1
-            if config.GENERIC not in ports_available:
+            if config.GENERIC not in self.players[self.player_turn].ports:
                 for key in config.card_types:
-                    if key not in self.resources_received and self.players[self.player_turn].available_cards({key: 4}):
+                    if key not in self.resources_received and key not in self.players[self.player_turn].ports and self.players[self.player_turn].available_cards({key: 4}):
                         for key2 in config.card_types:
                             if key != key2 and key2 not in self.resources_offered and self.resource_available_port_trade(key2):
                                 moves.append((config.TRADE_41, (key, key2)))
@@ -1052,7 +1056,7 @@ class GameState:
             self.resources_received.append(move[1][1])
         elif move[0] == config.PORT_TRADE:
             self.start_port_trade(move[1][0])
-            if self.ports[move[1][0]] == config.GENERIC:
+            if move[1][0] == config.GENERIC:
                 self.handle_trade(move[1][1])
                 self.handle_trade(move[1][2])
             else:
@@ -1112,6 +1116,8 @@ class GameState:
                 self.descend_trees((config.THROW_DICE, self.last_dice_rolled))
             else:  
                 self.descend_trees(move)
+                
+        self.check_end_game()
 
     def descend_trees(self, move):
         for p in self.players:

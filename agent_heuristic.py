@@ -77,9 +77,9 @@ class Agent_Heuristic():
         
         for p in range(4):
             if self.determined == 1 or p == self.mcts.player_id:
-                points.append(self.state.players[p].points(hidden = 1))
-            else:
                 points.append(self.state.players[p].points(hidden = 0))
+            else:
+                points.append(self.state.players[p].points(hidden = 1))
                 
         return np.array(points)
         
@@ -106,6 +106,17 @@ class Agent_Heuristic():
                     resources[self.state.tiles[tile] - 2] += self.get_tile_output(tile)
                     
         return resources
+    
+    def get_port_output(self, vertex, player):
+        for p, value in config.ports_vertex.items():
+            if vertex in value['vert']:
+                if self.state.ports[p] == config.GENERIC and config.GENERIC not in self.state.players[player].ports:
+                    return 0.05
+                else:
+                    return 0.025
+                return 0.0
+            
+        return 0.0
             
     def extra_value(self):
         extra_value = []
@@ -129,7 +140,7 @@ class Agent_Heuristic():
                 for v in r:
                     if self.state.available_settlement_spot(v):
                         has_road_in_pot_sett = 1
-                        v_value = np.sum(self.resources_value * self.get_vertex_output(v))
+                        v_value = np.sum(self.resources_value * self.get_vertex_output(v)) + self.get_port_output(v, p)
                         if v_value > max_value_potential_settl:
                             max_value_potential_settl = v_value
                         
@@ -148,8 +159,7 @@ class Agent_Heuristic():
                                     has_road_at_1_step = 1
                                     break
                     if has_road_at_1_step == 1:
-                        break
-                                    
+                        break                                    
             
             # Cards In Hand
             if self.state.players[p].available_resources('city'):
@@ -178,6 +188,13 @@ class Agent_Heuristic():
             # More 7 cards penalty
             if self.state.players[p].total_cards() > 7:
                 estimated_value -= 0.02
+                
+            # Ports
+            for p in self.state.players[p].ports:
+                if p == config.GENERIC:
+                    estimated_value += 0.05
+                else:
+                    estimated_value += 0.025                    
                             
             extra_value.append(estimated_value)
             
