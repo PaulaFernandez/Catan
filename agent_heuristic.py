@@ -100,10 +100,9 @@ class Agent_Heuristic():
                 
     def get_vertex_output(self, vertex):        
         resources = np.array([0, 0, 0, 0, 0])
-        for tile, vertices in config.tiles_vertex.items():
-            if vertex in vertices:
-                if self.state.tiles[tile] != config.DESERT:
-                    resources[self.state.tiles[tile] - 2] += self.get_tile_output(tile)
+        for tile in config.vertex_tiles[vertex]:
+            if self.state.tiles[tile] != config.DESERT:
+                resources[self.state.tiles[tile] - 2] += self.get_tile_output(tile)
                     
         return resources
     
