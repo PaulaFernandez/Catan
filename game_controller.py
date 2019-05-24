@@ -25,7 +25,7 @@ class GameController:
             if a == "h":
                 net = Agent_Heuristic()
             else:
-                net = Agent_NN()
+                net = Agent_NN(enable_cache = True)
                 net.nn_read(a)
             
             agents_obj.append((str(a), net))

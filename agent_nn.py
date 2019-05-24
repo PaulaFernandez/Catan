@@ -4,9 +4,12 @@ import config
 from model import Residual_CNN
 
 class Agent_NN:
-    def __init__(self):
+    def __init__(self, enable_cache = False):
         self.nn_start = Residual_CNN(config.REG_CONST, config.LEARNING_RATE, config.INPUT_START_DIM, config.OUTPUT_START_DIM, config.HIDDEN_CNN_LAYERS)
         self.nn = Residual_CNN(config.REG_CONST, config.LEARNING_RATE, config.INPUT_DIM, config.OUTPUT_DIM, config.HIDDEN_CNN_LAYERS)
+        
+        self.enable_cache = enable_cache
+        self.cache = {}
         
     def nn_read(self, name):
         self.nn_start.read(name, 's')
@@ -29,19 +32,26 @@ class Agent_NN:
 
         numbers_output = {2: 1, 3: 2, 4: 3, 5: 4, 6: 5, 8: 5, 9: 4, 10: 3, 11: 2, 12: 1}
         rotation = np.random.randint(12)
-
-        # Resources outputs
-        for number, tile in state.numbers:
-            resource = state.tiles[tile]
-            for vertex in config.tiles_vertex[tile]:
-                nn_input[0, resource - 2, config.vertex_to_nn_input[rotation][vertex][0], config.vertex_to_nn_input[rotation][vertex][1]] += numbers_output[number] / 15.0
-
-        # Ports
-        for key, r in enumerate([config.SHEEP, config.ORE, config.BRICK, config.WHEAT, config.WOOD, config.GENERIC]):
-            indices = [i for i, x in enumerate(state.ports) if x == r]
-            for i in indices:
-                for vertex in config.ports_vertex[i]['vert']:
-                    nn_input[0, key + 5, config.vertex_to_nn_input[rotation][vertex][0], config.vertex_to_nn_input[rotation][vertex][1]] = 1
+        
+        if self.enable_cache is True and rotation in self.cache:
+            nn_input[:, :11, :, :] = self.cache[rotation]
+            
+        else:
+            # Resources outputs
+            for number, tile in state.numbers:
+                resource = state.tiles[tile]
+                for vertex in config.tiles_vertex[tile]:
+                    nn_input[0, resource - 2, config.vertex_to_nn_input[rotation][vertex][0], config.vertex_to_nn_input[rotation][vertex][1]] += numbers_output[number] / 15.0
+    
+            # Ports
+            for key, r in enumerate([config.SHEEP, config.ORE, config.BRICK, config.WHEAT, config.WOOD, config.GENERIC]):
+                indices = [i for i, x in enumerate(state.ports) if x == r]
+                for i in indices:
+                    for vertex in config.ports_vertex[i]['vert']:
+                        nn_input[0, key + 5, config.vertex_to_nn_input[rotation][vertex][0], config.vertex_to_nn_input[rotation][vertex][1]] = 1
+                        
+            if self.enable_cache is True:
+                self.cache[rotation] = nn_input[:, :11, :, :]
         
         # Settlements, cities, roads
         for p in range(4):
@@ -81,19 +91,26 @@ class Agent_NN:
 
         numbers_output = {2: 1, 3: 2, 4: 3, 5: 4, 6: 5, 8: 5, 9: 4, 10: 3, 11: 2, 12: 1}
         rotation = np.random.randint(12)
-
-        # Resources outputs
-        for number, tile in state.numbers:
-            resource = state.tiles[tile]
-            for vertex in config.tiles_vertex[tile]:
-                nn_input[0, resource - 2, config.vertex_to_nn_input[rotation][vertex][0], config.vertex_to_nn_input[rotation][vertex][1]] += numbers_output[number] / 15.0
-
-        # Ports
-        for key, r in enumerate([config.SHEEP, config.ORE, config.BRICK, config.WHEAT, config.WOOD, config.GENERIC]):
-            indices = [i for i, x in enumerate(state.ports) if x == r]
-            for i in indices:
-                for vertex in config.ports_vertex[i]['vert']:
-                    nn_input[0, key + 5, config.vertex_to_nn_input[rotation][vertex][0], config.vertex_to_nn_input[rotation][vertex][1]] = 1
+        
+        if self.enable_cache is True and rotation in self.cache:
+            nn_input[:, :11, :, :] = self.cache[rotation]
+            
+        else:
+            # Resources outputs
+            for number, tile in state.numbers:
+                resource = state.tiles[tile]
+                for vertex in config.tiles_vertex[tile]:
+                    nn_input[0, resource - 2, config.vertex_to_nn_input[rotation][vertex][0], config.vertex_to_nn_input[rotation][vertex][1]] += numbers_output[number] / 15.0
+    
+            # Ports
+            for key, r in enumerate([config.SHEEP, config.ORE, config.BRICK, config.WHEAT, config.WOOD, config.GENERIC]):
+                indices = [i for i, x in enumerate(state.ports) if x == r]
+                for i in indices:
+                    for vertex in config.ports_vertex[i]['vert']:
+                        nn_input[0, key + 5, config.vertex_to_nn_input[rotation][vertex][0], config.vertex_to_nn_input[rotation][vertex][1]] = 1
+                        
+            if self.enable_cache is True:
+                self.cache[rotation] = nn_input[:, :11, :, :]
         
         # Settlements, cities, roads
         for p in range(4):
