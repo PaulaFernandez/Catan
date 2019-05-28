@@ -346,16 +346,7 @@ class MCTS_AI:
         probs = self.normalize_probs(new_sp_cards[1])
         new_sp_cards[1] = probs
         
-        self.rivals_info[player_id]['special_cards'] = new_sp_cards        
-        
-    def get_undetermined_resources_rivals(self, player):
-        min_cards = [100, 100, 100, 100, 100]
-        for cards in self.rivals_info[player]['cards']:
-            for c in range(len(cards)):
-                if cards[c] < min_cards[c]:
-                    min_cards[c] = cards[c]
-                    
-        return min_cards
+        self.rivals_info[player_id]['special_cards'] = new_sp_cards     
     
     def select(self, state, node, weight):
         while 1:
@@ -364,7 +355,7 @@ class MCTS_AI:
                 state.ai_do_move(node.move)
 
                 if evaluate == True:
-                    prediction = self.agent.predict(state, node.current_player, self, determined = 1)
+                    prediction = self.agent.predict(state, node.current_player, self)
                     
                     node.add_probabilities(prediction[1][0])
             else:
@@ -383,7 +374,7 @@ class MCTS_AI:
             state.ai_do_move(m)
         node = node.add_child(current_player, m) # add child and descend tree
 
-        prediction = self.agent.predict(state, node.current_player, self, determined = 1)
+        prediction = self.agent.predict(state, node.current_player, self)
         node.add_probabilities(prediction[1][0])
 
         if node.is_random:
@@ -391,7 +382,7 @@ class MCTS_AI:
             state.ai_do_move(node.move)
 
             if evaluate == True:
-                prediction = self.agent.predict(state, node.current_player, self, determined = 1)
+                prediction = self.agent.predict(state, node.current_player, self)
                 node.add_probabilities(prediction[1][0])
 
         return node, prediction
@@ -499,7 +490,7 @@ class MCTS_AI:
             print (self.rootnode.possible_moves[0])
             return self.rootnode.possible_moves[0], 0, rootstate.get_player_moving()
         
-        start_prediction = self.agent.predict(rootstate, self.rootnode.current_player, self, determined = 0)
+        start_prediction = self.agent.predict(rootstate, self.rootnode.current_player, self)
         self.rootnode.add_probabilities(start_prediction[1][0])
         print(rootstate.get_player_moving())
         print(start_prediction[0])
@@ -552,7 +543,7 @@ class MCTS_AI:
                     p_order = (4 + backprop_node.current_player - last_node_player) % 4
                     
                     if expansion_result[p_order] is None:
-                        prediction = self.agent.predict(state, backprop_node.current_player, self, determined = 1)
+                        prediction = self.agent.predict(state, backprop_node.current_player, self)
                         expansion_result[p_order] = prediction[0][0][0]
                         
                     backprop_node.update(expansion_result[p_order]) # state is terminal. Update node with result from POV of node.playerJustMoved

@@ -37,7 +37,7 @@ def create_sets(type, batch_size, i, states_per_loop, train_net, train_head):
             if train_net == 'start':
                 nn = dummy_ai.build_start_nn_input(game_memory.states[move_num[j]][1], perspective)
             else:
-                nn = dummy_ai.build_nn_input(game_memory.states[move_num[j]][1], perspective, determined = 1)
+                nn = dummy_ai.build_nn_input(game_memory.states[move_num[j]][1], perspective)
             
             p_order = (4 + perspective - game_memory.states[move_num[j]][0]) % 4
             

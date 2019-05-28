@@ -16,15 +16,15 @@ DISABLE_PLAYERS_TRADES = False
 ETA = 0.7
 DETERMINISTIC_PLAY = True
 DETEMINISTIC_MOVES_THRESHOLD = 12
-CURRENT_AGENT = ['h']#, 2, 5, 6, 7, 8, 10, 11]
+CURRENT_AGENT = [19]#['h', 2, 5, 6, 7, 8, 10, 11]
 SELF_PLAY_BATCH_SIZE = 120
 VALIDATION_BATCH_SIZE = 32768
 TRAIN_BATCH_SIZE = 16384
 TRAINING_LOOPS = 20
 EPOCHS = 4
-MCTS_EXPLORATION = 275
+MCTS_EXPLORATION = 500
 MCTS_EXPLORATION_HEURISTIC = 1500
-EXPANSION_STEPS = 2
+EXPANSION_STEPS = 3
 MOMENTUM = 0.9
 REG_CONST = 0.0001
 LEARNING_RATE = 0.02
@@ -206,6 +206,13 @@ tiles_vertex = {5: [0, 1, 2, 10, 9, 8],
                 29: [39, 40, 41, 49, 48, 47],
                 30: [41, 42, 43, 51, 50, 49],
                 31: [43, 44, 45, 53, 52, 51]}
+
+vertex_tiles = {}
+for v in range(54):
+    vertex_tiles[v] = []
+    for tile, vertices in tiles_vertex.items():
+        if v in vertices:
+            vertex_tiles[v].append(tile)
 
 # Vertex to nn input
 vertex_to_nn_input = 12 * [None]

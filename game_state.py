@@ -38,6 +38,7 @@ class GameState:
         self.last_dice_rolled = 0
         self.resources_offered = []
         self.resources_received = []
+        self.available_settlements = [x for x in range(54)]
         
         if game_config is not None:
             self.type_game = game_config['TYPE_OF_GAME']
@@ -91,7 +92,7 @@ class GameState:
         #for i in range(4):
         #    result.__dict__["players"].append(copy(self.__dict__["players"][i]))
         
-        for key in ["special_cards", "special_cards_played", "players_to_discard", "houses_to_steal_from"]:
+        for key in ["special_cards", "special_cards_played", "players_to_discard", "houses_to_steal_from", "available_settlements"]:
             result.__dict__[key] = self.__dict__[key][:]
         
         for key in ["players", "trades_proposed", "players_trade"]:
@@ -322,12 +323,10 @@ class GameState:
                     self.add_resources_ai({self.tiles[tile]: 1}, self.player_turn)
 
     def available_settlement_spot(self, vertex):
-        for player_x in self.players:
-            for settlement in player_x.settlements + player_x.cities:
-                if config.settlement_clash[(vertex, settlement)]:
-                    return False
-                
-        return True
+        if vertex in self.available_settlements:
+            return True
+
+        return False
     
     def valid_settlement(self, vertex):
         def settlement_clash(vertex_1, vertex_2):
@@ -502,6 +501,14 @@ class GameState:
                 self.players[self.player_turn].ports.add(self.ports[p])
                 return
 
+    def remove_available_settlements(self, vertex):
+        self.available_settlements.remove(vertex)
+
+        for r in config.roads_from_settlement[vertex]:
+            for v in r:
+                if v in self.available_settlements:
+                    self.available_settlements.remove(v)
+
     def handle_build_settlement(self, vertex_released):
         if self.valid_settlement(vertex_released):
 
@@ -521,6 +528,7 @@ class GameState:
                 self.check_end_game()
                 
             self.add_port_available(vertex_released)
+            self.remove_available_settlements(vertex_released)
 
         self.current_action = -1
 

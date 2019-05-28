@@ -6,7 +6,6 @@ class Agent_Heuristic():
         self.state = None
         self.perspective = None
         self.mcts = None
-        self.determined = None
         self.points = None
         
         self.cache_tile_output = {}
@@ -14,11 +13,10 @@ class Agent_Heuristic():
         self.numbers_output = {2: 1, 3: 2, 4: 3, 5: 4, 6: 5, 8: 5, 9: 4, 10: 3, 11: 2, 12: 1}
         self.resources_value = np.array([0.025, 0.035, 0.03, 0.03, 0.03])
         
-    def predict(self, state, perspective, mcts, determined = 0):
+    def predict(self, state, perspective, mcts):
         self.state = state
         self.perspective = perspective
-        self.mcts = mcts
-        self.determined = determined        
+        self.mcts = mcts    
         
         self.points = self.players_points()
         base_values = self.base_value()
@@ -62,8 +60,7 @@ class Agent_Heuristic():
             b += 0.4 * len(self.state.players[p].cities)
             
             # Points Cards
-            if self.determined == 1 or p == self.mcts.player_id:
-                b += 0.2 * self.state.players[p].special_cards.count(config.VICTORY_POINT)
+            b += 0.2 * self.state.players[p].special_cards.count(config.VICTORY_POINT)
             
             base_value.append(b)
             
@@ -76,10 +73,7 @@ class Agent_Heuristic():
         points = []
         
         for p in range(4):
-            if self.determined == 1 or p == self.mcts.player_id:
-                points.append(self.state.players[p].points(hidden = 0))
-            else:
-                points.append(self.state.players[p].points(hidden = 1))
+            points.append(self.state.players[p].points(hidden = 0))
                 
         return np.array(points)
         
@@ -166,7 +160,7 @@ class Agent_Heuristic():
             elif self.state.players[p].available_resources('settlement'):
                 estimated_value += 0.1 + 0.15 * max_value_potential_settl
             elif has_road_in_pot_sett == 1:
-                estimated_value += 0.15 * max_value_potential_settl
+                estimated_value += 0.05 + 0.15 * max_value_potential_settl
             elif has_road_at_1_step == 1:
                 estimated_value += 0.02
             if self.state.players[p].available_resources('road'):

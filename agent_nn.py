@@ -19,8 +19,8 @@ class Agent_NN:
         self.nn_start.write(name, 's')
         self.nn.write(name, 'g')
     
-    def predict(self, state, perspective, mcts, determined = 0):
-        network = self.build_nn_input(state, perspective, mcts = mcts, determined = 0)
+    def predict(self, state, perspective, mcts):
+        network = self.build_nn_input(state, perspective, mcts = mcts)
     
         if network.shape[1] == config.INPUT_DIM[0]:
             return self.nn.predict(network)
@@ -83,7 +83,7 @@ class Agent_NN:
 
         return nn_input
 
-    def build_nn_input(self, state, perspective, mcts = None, determined = 0):
+    def build_nn_input(self, state, perspective, mcts = None):
         if state.game_phase == config.PHASE_INITIAL_SETTLEMENT or state.game_phase == config.PHASE_INITIAL_ROAD:
             return self.build_start_nn_input(state, perspective)
         
@@ -127,15 +127,8 @@ class Agent_NN:
         for p in range(4):
             p_order = (4 + p - perspective) % 4
             
-            if determined == 0 and p != mcts.player_id:
-                min_cards = mcts.get_undetermined_resources_rivals(p)
-                
-                for key, r in enumerate([config.SHEEP, config.ORE, config.BRICK, config.WHEAT, config.WOOD]):
-                    nn_input[0, 23 + key + 5 * p_order, :, :] = min_cards[key] / 10.0         
-                    
-            else:
-                for key, r in enumerate([config.SHEEP, config.ORE, config.BRICK, config.WHEAT, config.WOOD]):
-                    nn_input[0, 23 + key + 5 * p_order, :, :] = state.players[p].cards[r] / 10.0
+            for key, r in enumerate([config.SHEEP, config.ORE, config.BRICK, config.WHEAT, config.WOOD]):
+                nn_input[0, 23 + key + 5 * p_order, :, :] = state.players[p].cards[r] / 10.0
 
         # Robber
         for vertex in config.tiles_vertex[state.robber_tile]:
@@ -160,9 +153,8 @@ class Agent_NN:
         for p in range(4):
             p_order = (4 + p - perspective) % 4
             
-            if determined == 1 or p == mcts.player_id:
-                for key, r in enumerate([config.VICTORY_POINT, config.KNIGHT, config.MONOPOLY, config.ROAD_BUILDING, config.YEAR_OF_PLENTY]):
-                    nn_input[0, 56 + key + 5 * p_order, :, :] = state.players[p].special_cards.count(r) / 3.0
+            for key, r in enumerate([config.VICTORY_POINT, config.KNIGHT, config.MONOPOLY, config.ROAD_BUILDING, config.YEAR_OF_PLENTY]):
+                nn_input[0, 56 + key + 5 * p_order, :, :] = state.players[p].special_cards.count(r) / 3.0
 
         # Discarding, initial game phase
         if state.game_phase == config.PHASE_DISCARD:
