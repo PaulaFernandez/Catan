@@ -11,6 +11,9 @@ class Agent_NN:
         self.enable_cache = enable_cache
         self.cache = {}
         
+    def purge_cache(self):
+        self.cache = {}
+        
     def nn_read(self, name):
         self.nn_start.read(name, 's')
         self.nn.read(name, 'g')

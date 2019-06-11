@@ -32,8 +32,8 @@ class Gen_Model():
     def predict(self, x):
         return self.model.predict(x)
 
-    def fit(self, states, targets, epochs, verbose, validation_split, batch_size, validation_data):
-        return self.model.fit(states, targets, epochs=epochs, verbose=verbose, validation_data = validation_data, validation_split = validation_split, batch_size = batch_size)
+    def fit(self, states, targets, epochs, verbose, validation_split, batch_size):
+        return self.model.fit(states, targets, epochs=epochs, verbose=verbose, validation_split = validation_split, batch_size = batch_size)
 
     def write(self, version, type):
         self.model.save_weights(config.folder_agents + '\\' + "{0:0>5}".format(version) + type + '.h5')
@@ -85,7 +85,7 @@ class Residual_CNN(Gen_Model):
 
     def value_head(self, x):
         x = Conv2D(
-        filters = 4
+        filters = 16
         , kernel_size = (1,1)
         , data_format="channels_first"
         , padding = 'same'
@@ -101,7 +101,7 @@ class Residual_CNN(Gen_Model):
         x = Flatten(name='value_flatten')(x)
 
         x = Dense(
-            15
+            50
             , use_bias=False
             , activation='linear'
             , kernel_regularizer=regularizers.l2(self.reg_const)
@@ -109,6 +109,16 @@ class Residual_CNN(Gen_Model):
             )(x)
 
         x = LeakyReLU(name='value_leaky_2')(x)
+
+        x = Dense(
+            15
+            , use_bias=False
+            , activation='linear'
+            , kernel_regularizer=regularizers.l2(self.reg_const)
+            , name = 'value_dense_2'
+            )(x)
+
+        x = LeakyReLU(name='value_leaky_3')(x)
 
         x = Dense(
             1
@@ -156,12 +166,12 @@ class Residual_CNN(Gen_Model):
                 x = self.residual_layer(x, h['filters'], h['kernel_size'])
 
         vh = self.value_head(x)
-        ph = self.policy_head(x)
+        #ph = self.policy_head(x)
 
-        model = Model(inputs=[main_input], outputs=[vh, ph])
-        model.compile(loss={'value_head': 'mean_squared_error', 'policy_head': 'mean_squared_error'},
+        model = Model(inputs=[main_input], outputs=[vh])
+        model.compile(loss={'value_head': 'mean_squared_error'},
             optimizer=SGD(lr=self.learning_rate, momentum = config.MOMENTUM),	
-            loss_weights={'value_head': 0.5, 'policy_head': 0.5}	
+            #loss_weights={'value_head': 1.0}	
             )
 
         return model

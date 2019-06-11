@@ -6,9 +6,9 @@ import config
 
 from agent_nn import Agent_NN
 
-training_passes = [('start', 'value'), ('start', 'policy'), ('general', 'value'), ('general', 'policy')]
-agents_to_train = [12, 11]
-new_agents = [14, 15]
+training_passes = [('start', 'value'), ('general', 'value')]
+agents_to_train = [10, 7]
+new_agents = [11, 12]
 
 # New combinations
 agents = []
@@ -52,10 +52,10 @@ for i, new_networks in enumerate([new_agent_breed, agents[0]]):
     new_networks.nn_write(new_agents[i])
 
 # Create states
-val_states_per_loop = 1
-val_number_of_sets = 1
+val_states_per_loop = 0
+val_number_of_sets = 0
 states_per_loop = 10
-number_of_sets = 4
+number_of_sets = 2
 
 for net, head in training_passes:
     # Validation

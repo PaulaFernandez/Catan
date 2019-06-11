@@ -9,7 +9,7 @@ class Node:
     """ A node in the game tree. Note wins is always from the viewpoint of player_turn.
         Crashes if state not specified.
     """
-    def __init__(self, player, parent = None, move = None, prior_probs = 0.0):
+    def __init__(self, player, parent = None, move = None):
         self.current_player = player
         self.parentNode = parent # "None" for the root node
         self.move = move
@@ -20,28 +20,10 @@ class Node:
         self.W = 0 # Total value of node
         self.N = 0 # Total visits
         self.Q = 0
-        self.move_probabilities = []
-        self.prior_probabilities = prior_probs
-
-    def move_index(self, move, player):
-        if len(self.move_probabilities) == config.OUTPUT_START_DIM:
-            return config.start_available_moves.index(move)
-        else:
-            if move[0] == config.STEAL_FROM_HOUSE:
-                p_order = (4 + move[1][1] - self.current_player) % 4
-                return config.available_moves.index((move[0], (move[1][0], p_order)))
-            elif move[0] == config.TRADE_OFFER:
-                p_order = (4 + move[1] - player) % 4
-                return config.available_moves.index((move[0], p_order, move[2], move[3]))
-            else:
-                return config.available_moves.index(move)
-        
-    def add_probabilities(self, probs):
-        self.move_probabilities = probs
         
     def UCTSelectChild(self, weight):
         def evaluation(x):
-            return weight * x.Q + (1 - weight) * 0.2 * (x.prior_probabilities / 2.0 + 0.5) * sqrt(self.N / (0.01 + x.N))
+            return weight * x.Q + (1 - weight) * 0.2 * sqrt(self.N / (0.01 + x.N))
 
         potential_moves = []
         
@@ -66,6 +48,11 @@ class Node:
         
         return probs
     
+    def add_virtual_loss(self):
+        self.N += 1
+        self.W -= 1
+        self.Q = self.W / self.N
+    
     def update(self, result):
         self.N += 1
         self.W += result
@@ -86,18 +73,14 @@ class Node:
         return possible_expansion
     
     def add_child(self, player, move):
-        index_probs = self.move_index(move, player)
         if move[0] == config.THROW_DICE:
-            n = Dice_Node(player, self, prior_probs = self.move_probabilities[index_probs])
+            n = Dice_Node(player, self)
         elif move[0] == config.BUY_SPECIAL_CARD:
-            n = Buy_Card_Node(player, self, prior_probs = self.move_probabilities[index_probs])
+            n = Buy_Card_Node(player, self)
         elif move[0] == config.STEAL_FROM_HOUSE:
-            n = Steal_Card_Node(player, move, self, prior_probs = self.move_probabilities[index_probs])
+            n = Steal_Card_Node(player, move, self)
         else:
-            try:
-                n = Node(player, self, move, prior_probs = self.move_probabilities[index_probs])
-            except:
-                raise Exception("index: " + str(index_probs) + "move_probs: " + str(self.move_probabilities))
+            n = Node(player, self, move)
         self.childNodes.append(n)
         self.child_moves.append(move)
         return n
@@ -109,11 +92,11 @@ class Node:
         return s
 
     def __repr__(self):
-        return "[M:" + str(self.move) + " Q/N:" + str(self.Q) + "/" + str(self.N) + "] P: " + str(self.prior_probabilities)
+        return "[M:" + str(self.move) + " Q/N:" + str(self.Q) + "/" + str(self.N) + "]"
 
 class Dice_Node(Node):
-    def __init__(self, player, parent = None, prior_probs = 0.0):
-        Node.__init__(self, player, parent, (config.THROW_DICE,), prior_probs)
+    def __init__(self, player, parent = None):
+        Node.__init__(self, player, parent, (config.THROW_DICE,))
         self.possible_moves = [(config.THROW_DICE, x) for x in range(2, 13)]
         self.is_random = True
         
@@ -143,8 +126,8 @@ class Dice_Node(Node):
         return node
 
 class Steal_Card_Node(Node):
-    def __init__(self, player, move, parent = None, prior_probs = 0.0):
-        Node.__init__(self, player, parent, move, prior_probs)
+    def __init__(self, player, move, parent = None):
+        Node.__init__(self, player, parent, move)
         self.possible_moves = [(config.STEAL_FROM_HOUSE, move[1], key) for key in config.card_types]
         self.is_random = True
         
@@ -172,8 +155,8 @@ class Steal_Card_Node(Node):
         return node
 
 class Buy_Card_Node(Node):
-    def __init__(self, player, parent = None, prior_probs = 0.0):
-        Node.__init__(self, player, parent, (config.BUY_SPECIAL_CARD,), prior_probs)
+    def __init__(self, player, parent = None):
+        Node.__init__(self, player, parent, (config.BUY_SPECIAL_CARD,))
         self.possible_moves = [(config.BUY_SPECIAL_CARD, config.VICTORY_POINT),
                                (config.BUY_SPECIAL_CARD, config.KNIGHT),
                                (config.BUY_SPECIAL_CARD, config.MONOPOLY),
@@ -209,6 +192,8 @@ class MCTS_AI:
         self.rootnode = None
         self.deteministic_play = config.DETERMINISTIC_PLAY
         self.agent = agent
+        
+        self.agent.purge_cache()
 
         for p in range(4):
             if p != self.player_id:
@@ -352,18 +337,15 @@ class MCTS_AI:
         while 1:
             if node.is_random:
                 node, evaluate = node.roll(state)
+                #node.add_virtual_loss()
                 state.ai_do_move(node.move)
-
-                if evaluate == True:
-                    prediction = self.agent.predict(state, node.current_player, self)
-                    
-                    node.add_probabilities(prediction[1][0])
             else:
                 expansion_nodes = node.check_untried(state)
                 if expansion_nodes != [] or state.game_phase == config.PHASE_END_GAME:
                     return node, expansion_nodes
                 else:
                     node = node.UCTSelectChild(weight)
+                    #node.add_virtual_loss()
                     if node.move[0] != config.THROW_DICE and node.move[0] != config.BUY_SPECIAL_CARD and node.move[0] != config.STEAL_FROM_HOUSE:
                         state.ai_do_move(node.move)
                     
@@ -373,19 +355,14 @@ class MCTS_AI:
         if m[0] != config.THROW_DICE and m[0] != config.BUY_SPECIAL_CARD and m[0] != config.STEAL_FROM_HOUSE:
             state.ai_do_move(m)
         node = node.add_child(current_player, m) # add child and descend tree
-
-        prediction = self.agent.predict(state, node.current_player, self)
-        node.add_probabilities(prediction[1][0])
+        #node.add_virtual_loss()
 
         if node.is_random:
             node, evaluate = node.roll(state)
+            #node.add_virtual_loss()
             state.ai_do_move(node.move)
 
-            if evaluate == True:
-                prediction = self.agent.predict(state, node.current_player, self)
-                node.add_probabilities(prediction[1][0])
-
-        return node, prediction
+        return node
         
     def expansion_possibilities(self, state, node):
         expansion_nodes = node.check_untried(state)
@@ -457,24 +434,10 @@ class MCTS_AI:
                             state.players[p].special_cards.append(state.special_cards.pop())
             
         return True
-
-    def calc_posteriors(self, rootnode, rootstate):
-        if rootstate.game_phase == config.PHASE_INITIAL_SETTLEMENT or rootstate.game_phase == config.PHASE_INITIAL_ROAD:
-            posteriors = np.zeros(config.OUTPUT_START_DIM)
-        else:
-            posteriors = np.zeros(config.OUTPUT_DIM)
-
-        for n in rootnode.childNodes:
-            index_probs = rootnode.move_index(n.move, self.player_id)
-            try:
-                posteriors[index_probs] = n.N / self.itermax
-            except:
-                raise Exception(rootnode.ChildrenToString())
-
-        return posteriors
     
     def move(self, rootstate):
         iterations_done = 0
+        itermax = self.itermax
         
         if rootstate.moves >= config.DETEMINISTIC_MOVES_THRESHOLD:
             self.deteministic_play = True
@@ -488,14 +451,16 @@ class MCTS_AI:
         if len(self.rootnode.get_possible_moves(rootstate)) == 1:
             print (rootstate.get_player_moving())
             print (self.rootnode.possible_moves[0])
-            return self.rootnode.possible_moves[0], 0, rootstate.get_player_moving()
+            return self.rootnode.possible_moves[0], rootstate.get_player_moving()
         
-        start_prediction = self.agent.predict(rootstate, self.rootnode.current_player, self)
-        self.rootnode.add_probabilities(start_prediction[1][0])
+        #start_prediction = self.agent.predict(rootstate, self.rootnode.current_player, self)
+        #self.rootnode.add_probabilities(start_prediction[1][0])
         print(rootstate.get_player_moving())
-        print(start_prediction[0])
+        #print(start_prediction[0])
         
-        for i in range(iterations_done - 1, self.itermax):
+        i = iterations_done
+        while i < itermax:
+        #for i in range(iterations_done - 1, itermax):
             valid_determinization = False
             
             num_determ = 0
@@ -520,12 +485,13 @@ class MCTS_AI:
                     relax_det = 1
             
             # Select
-            node, expansion_nodes = self.select(state, node, (i / self.itermax) * (i / self.itermax))
+            node, expansion_nodes = self.select(state, node, (i / itermax) * (i / itermax))
             
             for j in range(config.EXPANSION_STEPS):
                 # Expand
                 if expansion_nodes != []: # Otherwise this is a terminal Node
-                    node, prediction = self.expand(state, node, expansion_nodes)
+                    node = self.expand(state, node, expansion_nodes)
+                    prediction = self.agent.predict(state, node.current_player, self)
 
                 # Backpropagate
                 last_node_player = node.current_player
@@ -536,7 +502,7 @@ class MCTS_AI:
                         expansion_result[p_order] = state.ai_get_result(p)
                 else:
                     expansion_result = [None, None, None, None]
-                    expansion_result[0] = prediction[0][0][0]
+                    expansion_result[0] = prediction[0][0]
                     
                 backprop_node = node
                 while backprop_node != None: # backpropagate from the expanded node and work back to the root node
@@ -544,7 +510,7 @@ class MCTS_AI:
                     
                     if expansion_result[p_order] is None:
                         prediction = self.agent.predict(state, backprop_node.current_player, self)
-                        expansion_result[p_order] = prediction[0][0][0]
+                        expansion_result[p_order] = prediction[0][0]
                         
                     backprop_node.update(expansion_result[p_order]) # state is terminal. Update node with result from POV of node.playerJustMoved
                     backprop_node = backprop_node.parentNode
@@ -554,25 +520,28 @@ class MCTS_AI:
                 if expansion_nodes == []: # It was a terminal node
                     break
                 
-            if self.deteministic_play is True and i > self.itermax / 2.0:
+            if self.deteministic_play is True and i > itermax / 2.0:
                 s_children = sorted(self.rootnode.childNodes, key = lambda c: c.N)
                 
-                if len(s_children) < 2 or s_children[-1].N > s_children[-2].N + config.EXPANSION_STEPS * (self.itermax - i):
+                if len(s_children) < 2 or s_children[-1].N > s_children[-2].N + config.EXPANSION_STEPS * (itermax - i):
                     move = s_children[-1].move
                     
                     print (self.rootnode.ChildrenToString())
-                    posterior_probs = self.calc_posteriors(self.rootnode, rootstate)
+                    #posterior_probs = self.calc_posteriors(self.rootnode, rootstate)
                     
                     print ("Move selected: " + str(move))
-                    return move, posterior_probs, rootstate.get_player_moving()
+                    return move, rootstate.get_player_moving()
+                    
+            itermax = len(self.rootnode.childNodes) * self.itermax / config.EXPLORATION_CHILD_BASIS
+            i += 1
                 
         print (self.rootnode.ChildrenToString())
 
-        posterior_probs = self.calc_posteriors(self.rootnode, rootstate)
+        #posterior_probs = self.calc_posteriors(self.rootnode, rootstate)
         
         if self.deteministic_play is True:
             move = sorted(self.rootnode.childNodes, key = lambda c: c.N)[-1].move
         else:
             move = np.random.choice(self.rootnode.childNodes, p = self.rootnode.get_child_probs()).move
         print ("Move selected: " + str(move))
-        return move, posterior_probs, rootstate.get_player_moving()
+        return move, rootstate.get_player_moving()

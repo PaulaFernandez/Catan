@@ -14,7 +14,6 @@ def create_sets(type, batch_size, i, states_per_loop, train_net, train_head):
 
     for j in range(states_per_loop):
         states[j] = {'states': [],
-                     'target_probs': [],
                      'target_results': []}
 
     for b in range(batch_size):
@@ -42,21 +41,12 @@ def create_sets(type, batch_size, i, states_per_loop, train_net, train_head):
             p_order = (4 + perspective - game_memory.states[move_num[j]][0]) % 4
             
             states[j]['states'].append(nn[0])
-            
-            if train_net == 'start':
-                states[j]['target_probs'].append(game_memory.states[move_num[j]][2])
-            else:
-                if isinstance(game_memory.states[move_num[j]][2], int) < config.OUTPUT_DIM:
-                    states[j]['target_probs'].append([0] * config.OUTPUT_DIM)
-                else:
-                    states[j]['target_probs'].append(game_memory.states[move_num[j]][2])
-                             
             states[j]['target_results'].append([game_memory.game_results[move_num[j]][p_order]])
     
     for j in range(states_per_loop):    
         file_output = {}
         file_output['batch_states'] = np.array(states[j]['states'])
-        file_output['batch_targets'] = [np.array(states[j]['target_results']), np.array(states[j]['target_probs'])]
+        file_output['batch_targets'] = [np.array(states[j]['target_results'])]
         
         if type == 'training':
             with open('train_states\\states' + str(states_per_loop * i + j) + '.pkl', 'wb') as output_file:

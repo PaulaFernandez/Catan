@@ -198,16 +198,48 @@ class GameState:
                 if p != player_id and self.players[p].ai != None:
                     self.players[p].ai.remove_special_card_rival(player_id, card)
 
+    @staticmethod
+    def is_adjacent(i, j):
+        vertex_x = config.tiles_vertex[i]
+        vertex_y = config.tiles_vertex[j]
+        
+        for x in vertex_x:
+            if x in vertex_y:
+                return True
+        
+        return False
+                    
+    def check_balanced_numbers(self, numbers_tiles):
+        tiles_6_8 = []
+        
+        for tiles in numbers_tiles:
+            if tiles[0] in [6, 8]:
+                tiles_6_8.append(tiles[1])
+        
+        for i in tiles_6_8:
+            for j in tiles_6_8:
+                if i != j:
+                    if self.is_adjacent(i, j):
+                        return False
+        
+        return True
+    
     def generate_numbers(self):
-        numbers = config.roll_numbers
-        shuffle(numbers)
+        valid_numbers = False
+        
+        while valid_numbers is False:
+            numbers = config.roll_numbers
+            shuffle(numbers)
 
-        numbers_tiles = []
-        j = 0
-        for i in range(len(self.tiles)):
-            if self.tiles[i] != config.WATER and self.tiles[i] != config.DESERT:
-                numbers_tiles.append((numbers[j], i))
-                j += 1
+            numbers_tiles = []
+            j = 0
+            for i in range(len(self.tiles)):
+                if self.tiles[i] != config.WATER and self.tiles[i] != config.DESERT:
+                    numbers_tiles.append((numbers[j], i))
+                    j += 1
+                    
+            if config.GENERATE_BALANCED_NUMBERS is False or self.check_balanced_numbers(numbers_tiles):
+                valid_numbers = True
 
         return numbers_tiles
 

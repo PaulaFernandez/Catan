@@ -14,10 +14,10 @@ def play_game(agents_obj):
 
     while game.game_phase != config.PHASE_END_GAME:
         player_moving = game.get_player_moving()
-        move, posterior_probs, player_moving = game.players[player_moving].ai.move(game)
+        move, player_moving = game.players[player_moving].ai.move(game)
         if player_moving > -1:
             save_game = deepcopy(game)
-            game_memory.add_to_memory_states(player_moving, save_game, posterior_probs)
+            game_memory.add_to_memory_states(player_moving, save_game)
         game.ai_do_move(move)
 
     game_result = []

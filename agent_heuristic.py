@@ -13,6 +13,9 @@ class Agent_Heuristic():
         self.numbers_output = {2: 1, 3: 2, 4: 3, 5: 4, 6: 5, 8: 5, 9: 4, 10: 3, 11: 2, 12: 1}
         self.resources_value = np.array([0.025, 0.035, 0.03, 0.03, 0.03])
         
+    def purge_cache(self):
+        pass
+        
     def predict(self, state, perspective, mcts):
         self.state = state
         self.perspective = perspective
@@ -26,12 +29,7 @@ class Agent_Heuristic():
         max_points = np.max(self.points)
         extra_value = extra_value * (2.0 - 0.15 * max_points) / sum_value
         
-        if self.state.game_phase == config.PHASE_INITIAL_SETTLEMENT or self.state.game_phase == config.PHASE_INITIAL_ROAD:
-            move_probabilities = [0.1] * config.OUTPUT_START_DIM
-        else:
-            move_probabilities = [0.1] * config.OUTPUT_DIM
-        
-        return [[[base_values[self.perspective] + extra_value[self.perspective]]], [move_probabilities]]
+        return [[base_values[self.perspective] + extra_value[self.perspective]]]
     
     def long_road_probs(self):
         max_points = np.max(self.points)
