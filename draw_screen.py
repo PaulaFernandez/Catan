@@ -265,6 +265,15 @@ class DrawScreen:
         game_type_text = self.font.render(game_type, 1, (0, 0, 0))
         self.screen.blit(game_type_text, (config.menu_x_offset + config.menu_image_size[0] + 120, config.menu_y_offset + config.menu_y_step + 25))
 
+        # Numbers Balanced?
+        self.draw(config.menu_x_offset, config.menu_y_offset + 2 * config.menu_y_step, config.game_type_image, config.menu_image_size, angle=0)
+        self.draw(config.menu_x_offset + config.menu_image_size[0] + 20, config.menu_y_offset + 2 * config.menu_y_step, config.minus_image, config.circle_image_size, angle=0)
+        self.draw(config.menu_x_offset + config.menu_image_size[0] + 270, config.menu_y_offset + 2 * config.menu_y_step, config.plus_image, config.circle_image_size, angle=0)
+        self.screen.fill((255, 255, 255), rect = pygame.Rect(config.menu_x_offset + config.menu_image_size[0] + 110, config.menu_y_offset + 2 * config.menu_y_step + 20, 140, 30))
+        numbers_type = "BALANCED" if config_game['GENERATE_BALANCED_NUMBERS'] is True else "NORMAL"
+        numbers_type_text = self.font.render(numbers_type, 1, (0, 0, 0))
+        self.screen.blit(numbers_type_text, (config.menu_x_offset + config.menu_image_size[0] + 120, config.menu_y_offset + 2 * config.menu_y_step + 25))
+
         # Players
         for p in range(4):
             self.draw(config.menu_x_offset_col2, config.menu_y_offset + p * config.menu_y_step, config.player_image[p], config.menu_image_size, angle=0)

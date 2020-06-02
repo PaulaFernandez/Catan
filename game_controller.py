@@ -11,6 +11,7 @@ class GameController:
         self.controller_state = 0
         self.config_game = {'MCTS_EXPLORATION': config.MCTS_EXPLORATION,
                             'TYPE_OF_GAME': config.TYPE_OF_GAME,
+                            'GENERATE_BALANCED_NUMBERS': config.GENERATE_BALANCED_NUMBERS,
                             'PLAYER_IS_HUMAN': config.player_is_human}
 
         self.draw_tool = DrawScreen()
@@ -38,10 +39,10 @@ class GameController:
         try:
             if self.game.boardgame_state == 0:
                 if self.game.players[self.game.get_player_moving()].is_human == 0:
-                    self.game.dices = (0, 0)
-                    move, _ = self.game.players[self.game.get_player_moving()].ai.move(self.game)
-                    self.game.ai_do_move(move)
-                    self.redraw()
+                    #self.game.dices = (0, 0)
+                    #move, _ = self.game.players[self.game.get_player_moving()].ai.move(self.game)
+                    #self.game.ai_do_move(move)
+                    #self.redraw()
                     return
 
             if self.game.boardgame_state == 1:
@@ -197,6 +198,10 @@ class GameController:
             return 'increase_game_type'
         if self.pos_in_rectangle(pos, config.menu_x_offset + config.menu_image_size[0] + 20, config.menu_y_offset + config.menu_y_step, config.circle_image_size[0], config.circle_image_size[1]):
             return 'decrease_game_type'
+        if self.pos_in_rectangle(pos, config.menu_x_offset + config.menu_image_size[0] + 270, config.menu_y_offset + 2 * config.menu_y_step, config.circle_image_size[0], config.circle_image_size[1]):
+            return 'change_numbers'
+        if self.pos_in_rectangle(pos, config.menu_x_offset + config.menu_image_size[0] + 20, config.menu_y_offset + 2 * config.menu_y_step, config.circle_image_size[0], config.circle_image_size[1]):
+            return 'change_numbers'
         if self.pos_in_rectangle(pos, config.menu_x_offset, config.menu_y_offset + 500, config.menu_image_size[0], config.menu_image_size[1]):
             return 'back'
 
@@ -277,6 +282,8 @@ class GameController:
                 self.config_game['MCTS_EXPLORATION'] -= 50
             elif pos_clicked in ['increase_game_type', 'decrease_game_type']:
                 self.config_game['TYPE_OF_GAME'] = (self.config_game['TYPE_OF_GAME'] + 1) % 2
+            elif pos_clicked in ['change_numbers']:
+                self.config_game['GENERATE_BALANCED_NUMBERS'] = False if self.config_game['GENERATE_BALANCED_NUMBERS'] else True
             elif pos_clicked == 'back':
                 self.controller_state = 0
             elif isinstance(pos_clicked, tuple):
@@ -351,6 +358,12 @@ class GameController:
                     move, _ = self.game.players[self.game.get_player_moving()].ai.move(self.game)
                     self.game.ai_do_move(move)
                     self.redraw()
+                    
+                elif self.check_click(pos) == ('action', config.SAVE_GAME):
+                    with open('game.pkl', 'wb') as output:
+                        pickle.dump(self.game, output, -1)
+                        self.game.log = "Game saved"
+                
                 return
 
             if self.game.game_phase == config.PHASE_INITIAL_SETTLEMENT:

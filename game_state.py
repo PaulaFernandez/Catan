@@ -92,7 +92,7 @@ class GameState:
         #for i in range(4):
         #    result.__dict__["players"].append(copy(self.__dict__["players"][i]))
         
-        for key in ["special_cards", "special_cards_played", "players_to_discard", "houses_to_steal_from", "available_settlements"]:
+        for key in ["special_cards", "special_cards_played", "players_to_discard", "houses_to_steal_from", "available_settlements", "resources_offered", "resources_received"]:
             result.__dict__[key] = self.__dict__[key][:]
         
         for key in ["players", "trades_proposed", "players_trade"]:
@@ -747,10 +747,15 @@ class GameState:
                 card_stolen = card_type
                 self.players[self.player_turn].add_resources({card_stolen: 1})
                 self.players[player_id].remove_resources({card_stolen: 1})
+                self.stolen_resources_ai(self.player_turn, player_id, {card_stolen: 1})
 
-                self.vertex_to_steal = -1
-                self.game_phase = config.PHASE_WAIT
-                self.log = "Choose action"
+                if self.dice_thrown == 1:
+                    self.vertex_to_steal = -1
+                    self.game_phase = config.PHASE_WAIT
+                    self.log = "Choose action"
+                else:
+                    self.game_phase = config.PHASE_THROW_DICE
+                    self.log = "Throw Dice"
                 return
 
     def handle_trade_x_1(self, resource_clicked, x):
@@ -805,8 +810,11 @@ class GameState:
 
     def handle_buy_given_special_card(self, card):
         self.players[self.player_turn].remove_resources_by_improvement('special_card')
+        self.remove_resources_ai(config.resources['special_card'], self.player_turn)
+        self.add_special_card_ai(self.player_turn)
         self.players[self.player_turn].special_cards.append(card)
         self.special_cards.remove(card)
+        self.check_end_game()
 
     def handle_play_knight(self):
         self.players[self.player_turn].use_special_card(config.KNIGHT)

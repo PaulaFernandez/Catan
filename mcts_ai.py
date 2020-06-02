@@ -389,8 +389,8 @@ class MCTS_AI:
                     cards_set = (0,0,0,0,0)
                 state.players[p].cards = {config.SHEEP: cards_set[0], 
                                           config.ORE: cards_set[1], 
-                                          config.WHEAT: cards_set[2], 
-                                          config.BRICK: cards_set[3], 
+                                          config.BRICK: cards_set[2], 
+                                          config.WHEAT: cards_set[3], 
                                           config.WOOD: cards_set[4]}
 
         # Special Cards
@@ -461,6 +461,9 @@ class MCTS_AI:
         i = iterations_done
         while i < itermax:
         #for i in range(iterations_done - 1, itermax):
+            if i % 2000 == 0:
+                print ("Iterations Done: " + str(i))
+            
             valid_determinization = False
             
             num_determ = 0
